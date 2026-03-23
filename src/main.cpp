@@ -150,6 +150,7 @@ int main(int argc, char** argv) {
         pollCompile(state);
         processSaveRequest(state, editorModule);
         processAutoCompile(state, editorModule);
+        rebuildFontsIfNeeded(state, editorModule, io);
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
