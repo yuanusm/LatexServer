@@ -1,139 +1,121 @@
-#include <GLFW/glfw3.h>
+#include "app_state.h"
+#include "compiler.h"
+#include "ui.h"
 
+#include <GLFW/glfw3.h>
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+
+#include <algorithm>
 #include <chrono>
-#include <cstdlib>
+#include <cstring>
 #include <filesystem>
+#include <future>
 #include <iostream>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 
 namespace fs = std::filesystem;
 
-struct AppState {
-    fs::path texPath = "assets/sample.tex";
-    fs::path buildDir = "build-output";
-    fs::path lastPdfPath;
-    std::string status = "Presiona B para compilar el PDF. Presiona O para abrir el ultimo PDF generado.";
-    std::chrono::steady_clock::time_point statusUpdatedAt = std::chrono::steady_clock::now();
-};
+namespace {
 
-std::string shellEscape(const fs::path& path) {
-    std::string input = path.string();
-    std::string output;
-    output.reserve(input.size() + 2);
-    output.push_back('\'');
-    for (char ch : input) {
-        if (ch == '\'') {
-            output += "'\\''";
-        } else {
-            output.push_back(ch);
-        }
-    }
-    output.push_back('\'');
-    return output;
+std::string editorText(const AppState& state) {
+    return std::string(state.editorBuffer.data());
 }
 
-std::string detectOpenCommand(const fs::path& pdfPath) {
-#if defined(_WIN32)
-    return "start \"\" " + shellEscape(pdfPath);
-#elif defined(__APPLE__)
-    return "open " + shellEscape(pdfPath);
-#else
-    return "xdg-open " + shellEscape(pdfPath) + " >/dev/null 2>&1 &";
-#endif
+void loadEditor(AppState& state) {
+    const std::string content = compiler::readFile(state.texPath);
+    state.editorBuffer.assign(std::max<std::size_t>(content.size() + 1, 64 * 1024), '\0');
+    std::memcpy(state.editorBuffer.data(), content.c_str(), content.size());
+    state.editorDirty = false;
 }
 
-void updateWindowTitle(GLFWwindow* window, const std::string& status) {
-    std::string title = "LatexServer - sin render interno | " + status;
-    glfwSetWindowTitle(window, title.c_str());
+bool saveEditor(const AppState& state, std::string& error) {
+    return compiler::writeFile(state.texPath, editorText(state), error);
 }
 
-bool runCommand(const std::string& command) {
-    return std::system(command.c_str()) == 0;
-}
-
-bool compilePdf(AppState& state) {
-    fs::create_directories(state.buildDir);
-
-    const fs::path outputPdf = state.buildDir / (state.texPath.stem().string() + ".pdf");
-    std::ostringstream command;
-    command << "pdflatex"
-            << " -interaction=nonstopmode"
-            << " -halt-on-error"
-            << " -output-directory " << shellEscape(state.buildDir)
-            << " " << shellEscape(state.texPath);
-
-    if (!runCommand(command.str())) {
-        state.status = "Fallo la compilacion. Revisa la terminal para ver el error de pdflatex.";
-        return false;
-    }
-
-    if (!fs::exists(outputPdf)) {
-        state.status = "pdflatex termino sin generar el PDF esperado.";
-        return false;
-    }
-
-    state.lastPdfPath = outputPdf;
-    state.status = "PDF generado en " + outputPdf.string() + ". Presiona O para abrirlo externamente.";
-    return true;
-}
-
-bool openPdf(const AppState& state, std::string& status) {
-    if (state.lastPdfPath.empty() || !fs::exists(state.lastPdfPath)) {
-        status = "Todavia no hay un PDF generado para abrir.";
-        return false;
-    }
-
-    if (!runCommand(detectOpenCommand(state.lastPdfPath))) {
-        status = "No se pudo abrir el PDF con la aplicacion del sistema.";
-        return false;
-    }
-
-    status = "PDF abierto externamente: " + state.lastPdfPath.string();
-    return true;
-}
-
-void keyCallback(GLFWwindow* window, int key, int, int action, int) {
-    if (action != GLFW_PRESS) {
+void startCompile(AppState& state) {
+    if (state.compileInProgress) {
         return;
     }
 
-    auto* state = static_cast<AppState*>(glfwGetWindowUserPointer(window));
-    if (state == nullptr) {
+    std::string error;
+    if (!saveEditor(state, error)) {
+        state.status = error;
+        state.lastCompileSuccess = false;
         return;
     }
 
-    switch (key) {
-        case GLFW_KEY_ESCAPE:
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-            break;
-        case GLFW_KEY_B:
-            compilePdf(*state);
-            break;
-        case GLFW_KEY_O:
-            openPdf(*state, state->status);
-            break;
-        default:
-            break;
-    }
-
-    state->statusUpdatedAt = std::chrono::steady_clock::now();
-    updateWindowTitle(window, state->status);
+    state.compileInProgress = true;
+    state.compileRequested = false;
+    state.status = "Compiling with latexmk...";
+    state.lastAutoCompileAt = std::chrono::steady_clock::now();
+    state.compileFuture = std::async(std::launch::async, [state]() {
+        return compiler::compilePdf(state);
+    });
 }
 
-int main() {
+void pollCompile(AppState& state) {
+    if (!state.compileInProgress) {
+        return;
+    }
+
+    if (state.compileFuture.wait_for(std::chrono::milliseconds(0)) != std::future_status::ready) {
+        return;
+    }
+
+    const CompileResult result = state.compileFuture.get();
+    state.compileInProgress = false;
+    state.lastCommand = result.command;
+    state.lastCompileSuccess = result.success;
+    state.status = result.message;
+    if (result.success) {
+        state.lastPdfPath = result.pdfPath;
+        state.editorDirty = false;
+    }
+}
+
+void handleOpenPdf(AppState& state) {
+    if (!state.openPdfRequested) {
+        return;
+    }
+
+    state.openPdfRequested = false;
+    compiler::openPdf(state, state.status);
+}
+
+void processAutoCompile(AppState& state) {
+    if (!state.autoMode || state.compileInProgress || !state.editorDirty) {
+        return;
+    }
+
+    const auto now = std::chrono::steady_clock::now();
+    if (now - state.lastEditAt < std::chrono::milliseconds(700)) {
+        return;
+    }
+
+    startCompile(state);
+}
+
+}  // namespace
+
+int main(int argc, char** argv) {
+    const fs::path argv0 = argc > 0 ? fs::path(argv[0]) : fs::current_path();
+    const fs::path projectRoot = compiler::detectProjectRoot(argv0);
+    fs::current_path(projectRoot);
+
     if (!glfwInit()) {
-        std::cerr << "No se pudo inicializar GLFW.\n";
+        std::cerr << "Failed to initialize GLFW.\n";
         return EXIT_FAILURE;
     }
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
-    GLFWwindow* window = glfwCreateWindow(960, 540, "LatexServer - sin render interno", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1400, 900, "LatexServer", nullptr, nullptr);
     if (window == nullptr) {
-        std::cerr << "No se pudo crear la ventana GLFW.\n";
+        std::cerr << "Failed to create the GLFW window.\n";
         glfwTerminate();
         return EXIT_FAILURE;
     }
@@ -141,22 +123,65 @@ int main() {
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 130");
+
     AppState state;
-    glfwSetWindowUserPointer(window, &state);
-    glfwSetKeyCallback(window, keyCallback);
-    updateWindowTitle(window, state.status);
+    state.projectRoot = projectRoot;
+    state.texPath = fs::absolute(projectRoot / "assets/sample.tex");
+    state.buildDir = fs::absolute(projectRoot / "build-output");
+    state.logPath = state.buildDir / "latexmk.log";
+    state.status = "Ready. Edit the LaTeX source and click Compile.";
+
+    try {
+        loadEditor(state);
+    } catch (const std::exception& ex) {
+        state.editorBuffer.assign(64 * 1024, '\0');
+        state.status = std::string("Failed to load LaTeX source: ") + ex.what();
+    }
 
     while (!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
+
+        pollCompile(state);
+        processAutoCompile(state);
+        handleOpenPdf(state);
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        ui::renderMainWindow(state);
+        if (state.compileRequested) {
+            startCompile(state);
+        }
+
+        ImGui::Render();
+
         int width = 0;
         int height = 0;
         glfwGetFramebufferSize(window, &width, &height);
         glViewport(0, 0, width, height);
         glClearColor(0.09f, 0.10f, 0.12f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
-        glfwPollEvents();
     }
+
+    if (state.compileInProgress) {
+        state.compileFuture.wait();
+    }
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     glfwDestroyWindow(window);
     glfwTerminate();
