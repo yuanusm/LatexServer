@@ -1,6 +1,7 @@
 #include "app_state.h"
 #include "compiler.h"
 #include "editor.h"
+#include "file_tree.h"
 #include "ui.h"
 
 #include <GLFW/glfw3.h>
@@ -141,6 +142,8 @@ int main(int argc, char** argv) {
     state.status = "Ready. Open a .tex file, edit it, then save or compile.";
 
     editor::EditorModule editorModule;
+    file_tree::FileTreeModule fileTreeModule;
+    file_tree::initialize(fileTreeModule, state.projectRoot);
     editor::initialize(state, editorModule, io);
     rebuildFontsIfNeeded(state, editorModule, io);
 
@@ -156,7 +159,7 @@ int main(int argc, char** argv) {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ui::renderMainWindow(state, editorModule);
+        ui::renderMainWindow(state, editorModule, fileTreeModule);
         if (state.compileRequested) {
             startCompile(state, editorModule);
         }

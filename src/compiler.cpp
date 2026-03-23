@@ -14,6 +14,14 @@ int runCommand(const std::string& command) {
     return std::system(command.c_str());
 }
 
+std::string buildShellCommand(const fs::path& workingDirectory, const std::string& commandWithRedirect) {
+#ifdef _WIN32
+    return "cd /d " + quotePath(workingDirectory) + " && " + commandWithRedirect;
+#else
+    return "cd " + quotePath(workingDirectory) + " && " + commandWithRedirect;
+#endif
+}
+
 }  // namespace
 
 fs::path detectProjectRoot(const fs::path& argv0) {
@@ -99,6 +107,8 @@ CompileResult compilePdf(const CompileRequest& request) {
     const fs::path absoluteTexPath = fs::absolute(request.texPath);
     const fs::path absoluteBuildDir = fs::absolute(request.buildDir);
     const fs::path absoluteLogPath = fs::absolute(request.logPath);
+    const fs::path workingDirectory = absoluteTexPath.parent_path();
+
     fs::create_directories(absoluteBuildDir, ec);
     fs::create_directories(absoluteLogPath.parent_path(), ec);
 
@@ -106,6 +116,7 @@ CompileResult compilePdf(const CompileRequest& request) {
 
     std::vector<std::string> args = {
         "-pdf",
+        "-g",
         "-interaction=nonstopmode",
         "-synctex=1",
         buildOptionWithPath("-outdir", absoluteBuildDir),
@@ -113,23 +124,31 @@ CompileResult compilePdf(const CompileRequest& request) {
     };
 
     const std::string latexmkCommand = buildCommand("latexmk", args);
-    result.command = latexmkCommand + " > " + quotePath(absoluteLogPath) + " 2>&1";
+    const std::string commandWithRedirect = latexmkCommand + " > " + quotePath(absoluteLogPath) + " 2>&1";
+    result.command = buildShellCommand(workingDirectory, commandWithRedirect);
     result.exitCode = runCommand(result.command);
     result.logPath = absoluteLogPath;
+
+    const bool pdfExists = fs::exists(expectedPdf);
+    if (pdfExists) {
+        const auto pdfWriteTime = fs::last_write_time(expectedPdf, ec);
+        const auto texWriteTime = fs::last_write_time(absoluteTexPath, ec);
+        if (!ec && pdfWriteTime >= texWriteTime) {
+            result.success = true;
+            result.pdfPath = expectedPdf;
+            result.message = result.exitCode == 0
+                ? "Compiled successfully: " + expectedPdf.string()
+                : "latexmk reported warnings/errors, but an updated PDF was generated: " + expectedPdf.string();
+            return result;
+        }
+    }
 
     if (result.exitCode != 0) {
         result.message = "latexmk failed. See log: " + absoluteLogPath.string();
         return result;
     }
 
-    if (!fs::exists(expectedPdf)) {
-        result.message = "latexmk finished but the expected PDF was not found: " + expectedPdf.string();
-        return result;
-    }
-
-    result.success = true;
-    result.pdfPath = expectedPdf;
-    result.message = "Compiled successfully: " + expectedPdf.string();
+    result.message = "latexmk finished but the expected PDF was not found: " + expectedPdf.string();
     return result;
 }
 

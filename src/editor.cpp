@@ -97,6 +97,7 @@ TextEditor::LanguageDefinition makeLatexLanguageDefinition() {
 
     using PaletteIndex = TextEditor::PaletteIndex;
     language.mTokenRegexStrings.push_back({R"((\\[A-Za-z@]+))", PaletteIndex::Keyword});
+    language.mTokenRegexStrings.push_back({R"(([A-Za-z]+))", PaletteIndex::Keyword});
     language.mTokenRegexStrings.push_back({R"((\\[^A-Za-z\s]))", PaletteIndex::Keyword});
     language.mTokenRegexStrings.push_back({R"((\$\$[^$]*\$\$))", PaletteIndex::String});
     language.mTokenRegexStrings.push_back({R"((\$[^$\n]+\$))", PaletteIndex::String});

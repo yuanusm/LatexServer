@@ -1,6 +1,7 @@
 #include "ui.h"
 
 #include "compiler.h"
+#include "file_tree.h"
 
 #include <imgui.h>
 
@@ -69,12 +70,10 @@ bool renderOpenDialog(AppState& state, editor::EditorModule& editorModule) {
         }
 
         if (ImGui::Button("Load")) {
-            fs::path candidate = state.openPathBuffer;
-            if (candidate.is_relative()) {
-                candidate = state.projectRoot / candidate;
-            }
+            fs::path candidate;
             std::string error;
-            if (editor::loadDocument(state, editorModule, candidate, error)) {
+            if (file_tree::resolveProjectPath(state.projectRoot, state.openPathBuffer, candidate, error) &&
+                editor::loadDocument(state, editorModule, candidate, error)) {
                 loaded = true;
                 ImGui::CloseCurrentPopup();
             } else {
@@ -141,7 +140,7 @@ bool renderPreferences(AppState& state, editor::EditorModule& editorModule) {
 
 }  // namespace
 
-void renderMainWindow(AppState& state, editor::EditorModule& editorModule) {
+void renderMainWindow(AppState& state, editor::EditorModule& editorModule, file_tree::FileTreeModule& fileTreeModule) {
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize, ImGuiCond_Always);
 
@@ -167,8 +166,14 @@ void renderMainWindow(AppState& state, editor::EditorModule& editorModule) {
     ImGui::TextUnformatted(state.compileInProgress ? "Compilation: running" : (state.lastCompileSuccess ? "Compilation: last run succeeded" : "Compilation: idle or last run failed"));
 
     ImGui::Separator();
-    const ImVec2 editorSize = ImGui::GetContentRegionAvail();
-    editor::renderEditor(state, editorModule, editorSize);
+    const ImVec2 contentSize = ImGui::GetContentRegionAvail();
+    const float treeWidth = contentSize.x * 0.28f;
+
+    file_tree::renderPanel(state, editorModule, fileTreeModule, ImVec2(treeWidth, contentSize.y));
+    ImGui::SameLine();
+    ImGui::BeginChild("EditorHostPanel", ImVec2(0.0f, contentSize.y), true);
+    editor::renderEditor(state, editorModule, ImGui::GetContentRegionAvail());
+    ImGui::EndChild();
 
     if (reloaded) {
         state.lastCompileSuccess = false;
