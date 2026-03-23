@@ -18,6 +18,7 @@ A minimal local LaTeX editor for Windows-oriented GLFW/OpenGL setups. The app no
 - GLFW 3.3+
 - A LaTeX distribution that provides `latexmk` (MiKTeX works)
 - Network access during configure time so CMake can fetch Dear ImGui
+- No separate OpenGL loader package is required; the Dear ImGui OpenGL3 backend loader is used directly
 
 ## Build
 
@@ -33,6 +34,18 @@ cmake --build build
 ```
 
 On startup the application resolves the project root, changes the working directory there, and loads `assets/sample.tex` into the left editor pane.
+
+## Troubleshooting
+
+If you still see an error that mentions `build/_deps/glad-src/CMakeLists.txt`, your local `build/` directory was generated from an older revision. The current git version no longer uses `glad`, so remove the old build tree and configure again:
+
+```bash
+rm -rf build
+cmake -S . -B build
+cmake --build build
+```
+
+On Windows/MSYS2 MinGW64 you can also delete the `build` folder from Explorer and rerun the same commands from a fresh shell.
 
 ## UI
 

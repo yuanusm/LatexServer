@@ -2,7 +2,6 @@
 #include "compiler.h"
 #include "ui.h"
 
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -123,13 +122,6 @@ int main(int argc, char** argv) {
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
-
-    if (gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)) == 0) {
-        std::cerr << "Failed to initialize OpenGL loader.\n";
-        glfwDestroyWindow(window);
-        glfwTerminate();
-        return EXIT_FAILURE;
-    }
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
