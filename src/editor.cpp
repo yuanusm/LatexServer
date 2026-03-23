@@ -1,5 +1,7 @@
 #include "editor.h"
 
+#include <cstdint>
+
 #include "TextEditor.h"
 #include "compiler.h"
 
@@ -90,7 +92,7 @@ TextEditor::LanguageDefinition makeLatexLanguageDefinition() {
         "\\beta", "\\gamma", "\\delta", "\\epsilon", "\\lambda", "\\mu",
         "\\pi", "\\sigma", "\\phi", "\\omega", "\\mathbf", "\\mathit",
         "\\mathrm", "\\mathbb", "\\left", "\\right", "\\bigl", "\\bigr",
-        "\\displaystyle", "\\text", "\\newline", "\\\[", "\\\]", "\\(", "\\)"
+        "\\displaystyle", "\\text", "\\newline", "\\[", "\\]", "\\(", "\\)"
     };
 
     using PaletteIndex = TextEditor::PaletteIndex;
