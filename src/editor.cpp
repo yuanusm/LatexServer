@@ -108,14 +108,20 @@ TextEditor::LanguageDefinition makeLatexLanguageDefinition() {
 
 TextEditor::Palette makePalette(const Preferences& preferences) {
     auto palette = TextEditor::GetDarkPalette();
-    palette[TextEditor::PaletteIndex::Keyword] = ImColor(preferences.keywordColor);
-    palette[TextEditor::PaletteIndex::Comment] = ImColor(preferences.commentColor);
-    palette[TextEditor::PaletteIndex::String] = ImColor(preferences.stringColor);
-    palette[TextEditor::PaletteIndex::Background] = ImColor(preferences.backgroundColor);
-    palette[TextEditor::PaletteIndex::Default] = ImColor(preferences.textColor);
-    palette[TextEditor::PaletteIndex::LineNumber] = ImColor(0.55f, 0.58f, 0.64f, 1.0f);
-    palette[TextEditor::PaletteIndex::CurrentLineFill] = ImColor(0.16f, 0.18f, 0.22f, 1.0f);
-    palette[TextEditor::PaletteIndex::CurrentLineFillInactive] = ImColor(0.13f, 0.14f, 0.18f, 1.0f);
+    const auto slot = [&palette](TextEditor::PaletteIndex index) -> ImU32& {
+        return palette[static_cast<std::size_t>(index)];
+    };
+
+    slot(TextEditor::PaletteIndex::Keyword) = ImColor(preferences.keywordColor);
+    slot(TextEditor::PaletteIndex::Comment) = ImColor(preferences.commentColor);
+    slot(TextEditor::PaletteIndex::String) = ImColor(preferences.stringColor);
+    slot(TextEditor::PaletteIndex::Background) = ImColor(preferences.backgroundColor);
+    slot(TextEditor::PaletteIndex::Default) = ImColor(preferences.textColor);
+    slot(TextEditor::PaletteIndex::LineNumber) = preferences.showLineNumbers
+        ? ImColor(0.55f, 0.58f, 0.64f, 1.0f)
+        : ImColor(preferences.backgroundColor);
+    slot(TextEditor::PaletteIndex::CurrentLineFill) = ImColor(0.16f, 0.18f, 0.22f, 1.0f);
+    slot(TextEditor::PaletteIndex::CurrentLineFillInactive) = ImColor(0.13f, 0.14f, 0.18f, 1.0f);
     return palette;
 }
 
@@ -132,9 +138,8 @@ void initialize(AppState& state, EditorModule& module, ImGuiIO& io) {
 
     module.textEditor->SetLanguageDefinition(makeLatexLanguageDefinition());
     module.textEditor->SetPalette(makePalette(module.preferences));
-    module.textEditor->SetShowWhitespacesEnabled(module.preferences.showWhitespace);
+    module.textEditor->SetShowWhitespaces(module.preferences.showWhitespace);
     module.textEditor->SetTabSize(module.preferences.tabSize);
-    module.textEditor->SetShowLineNumbersEnabled(module.preferences.showLineNumbers);
     module.initialized = true;
 
     if (!state.texPath.empty()) {
@@ -204,8 +209,8 @@ void renderEditor(AppState& state, EditorModule& module, const ImVec2& size) {
         ImGui::PushFont(selectedFont);
     }
 
-    const bool changed = module.textEditor->Render("LaTeXSourceEditor", size, false);
-    if (changed) {
+    module.textEditor->Render("LaTeXSourceEditor", size, false);
+    if (module.textEditor->IsTextChanged()) {
         state.editorDirty = true;
         state.lastEditAt = std::chrono::steady_clock::now();
     }
@@ -221,9 +226,8 @@ void applyPreferences(EditorModule& module) {
     }
 
     module.textEditor->SetPalette(makePalette(module.preferences));
-    module.textEditor->SetShowWhitespacesEnabled(module.preferences.showWhitespace);
+    module.textEditor->SetShowWhitespaces(module.preferences.showWhitespace);
     module.textEditor->SetTabSize(module.preferences.tabSize);
-    module.textEditor->SetShowLineNumbersEnabled(module.preferences.showLineNumbers);
     module.fontAtlasDirty = true;
 }
 
