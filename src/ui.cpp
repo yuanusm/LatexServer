@@ -46,7 +46,7 @@ void renderToolbar(AppState& state) {
     }
 
     ImGui::SameLine();
-    ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+    ImGui::TextDisabled("|");
     ImGui::SameLine();
     ImGui::TextUnformatted(currentDocumentLabel(state).c_str());
     ImGui::SameLine();
