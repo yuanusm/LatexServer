@@ -1,39 +1,51 @@
-# LatexServer sin renderizado interno
+# LatexServer with Dear ImGui
 
-Esta versi\'on elimina la dependencia de **MuPDF** dentro de la aplicaci\'on. La ventana sigue usando **GLFW 3 + OpenGL**, pero ahora el flujo termina al generar el `.pdf` y abrirlo con el visor externo del sistema.
+A minimal local LaTeX editor for Windows-oriented GLFW/OpenGL setups. The app now embeds Dear ImGui for an editor-style interface, compiles with `latexmk`, writes output into `build-output`, and opens generated PDFs with the default Windows viewer.
 
-## Dependencias
+## Features
 
-En Ubuntu/Debian puedes instalar lo necesario con:
+- Dear ImGui editor UI with a split layout.
+- `latexmk -pdf -interaction=nonstopmode -synctex=1 -outdir=...` compilation flow.
+- Absolute path handling for source, output, and log files.
+- Windows-safe command building with double quotes only.
+- Optional auto-compile mode with background compilation.
+- PDF preview placeholder panel and an `Open PDF` button.
 
-```bash
-sudo apt update
-sudo apt install build-essential cmake libglfw3-dev libopengl-dev texlive-latex-base
-```
+## Dependencies
 
-> `xdg-open` suele venir con el entorno de escritorio. Si no est\'a disponible, instala `xdg-utils`.
+- CMake 3.16+
+- OpenGL
+- GLFW 3.3+
+- A LaTeX distribution that provides `latexmk` (MiKTeX works)
+- Network access during configure time so CMake can fetch Dear ImGui
 
-## Compilar
+## Build
 
 ```bash
 cmake -S . -B build
 cmake --build build
 ```
 
-## Ejecutar
+## Run
 
 ```bash
 ./build/latex_server
 ```
 
-## Uso
+On startup the application resolves the project root, changes the working directory there, and loads `assets/sample.tex` into the left editor pane.
 
-- `B`: compila `assets/sample.tex` con `pdflatex`.
-- `O`: abre `build-output/sample.pdf` con el visor PDF predeterminado.
-- `Esc`: cierra la app.
+## UI
 
-## Qu\'e cambi\'o
+- **Left panel:** editable LaTeX source via `InputTextMultiline`.
+- **Right panel:** placeholder PDF preview panel.
+- **Bottom bar:** `Compile`, `Auto`, and `Open PDF` controls.
 
-- Se mantiene la ventana OpenGL/GLFW como contenedor liviano.
-- Ya no se renderiza el PDF dentro de la app.
-- El resultado final es el archivo `.pdf` generado por `pdflatex`.
+## Compilation command
+
+The compile worker builds and logs a command like this:
+
+```text
+latexmk -pdf -interaction=nonstopmode -synctex=1 -outdir="C:/path/to/project/build-output" "C:/path/to/project/assets/sample.tex"
+```
+
+Compilation logs are redirected to `build-output/latexmk.log`.
