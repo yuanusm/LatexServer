@@ -1,5 +1,6 @@
 #include "app_state.h"
 #include "compiler.h"
+#include "editor.h"
 #include "ui.h"
 
 #include <GLFW/glfw3.h>
@@ -7,9 +8,7 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
-#include <algorithm>
 #include <chrono>
-#include <cstring>
 #include <filesystem>
 #include <future>
 #include <iostream>
@@ -20,44 +19,30 @@ namespace fs = std::filesystem;
 
 namespace {
 
-std::string editorText(const AppState& state) {
-    return std::string(state.editorBuffer.data());
+bool saveEditor(AppState& state, const editor::EditorModule& editorModule) {
+    std::string error;
+    if (!editor::saveDocument(state, editorModule, error)) {
+        state.status = error;
+        state.lastCompileSuccess = false;
+        return false;
+    }
+    return true;
 }
 
-void loadEditor(AppState& state) {
-    const std::string content = compiler::readFile(state.texPath);
-    state.editorBuffer.assign(std::max<std::size_t>(content.size() + 1, 64 * 1024), '\0');
-    std::memcpy(state.editorBuffer.data(), content.c_str(), content.size());
-    state.editorDirty = false;
-}
-
-bool saveEditor(const AppState& state, std::string& error) {
-    return compiler::writeFile(state.texPath, editorText(state), error);
-}
-
-void startCompile(AppState& state) {
+void startCompile(AppState& state, const editor::EditorModule& editorModule) {
     if (state.compileInProgress) {
         return;
     }
 
-    std::string error;
-    if (!saveEditor(state, error)) {
-        state.status = error;
-        state.lastCompileSuccess = false;
+    if (!saveEditor(state, editorModule)) {
         return;
     }
 
     state.compileInProgress = true;
     state.compileRequested = false;
     state.status = "Compiling with latexmk...";
-    state.lastAutoCompileAt = std::chrono::steady_clock::now();
 
-    const CompileRequest request{
-        state.texPath,
-        state.buildDir,
-        state.logPath
-    };
-
+    const CompileRequest request{state.texPath, state.buildDir, state.logPath};
     state.compileFuture = std::async(std::launch::async, [request]() {
         return compiler::compilePdf(request);
     });
@@ -79,20 +64,10 @@ void pollCompile(AppState& state) {
     state.status = result.message;
     if (result.success) {
         state.lastPdfPath = result.pdfPath;
-        state.editorDirty = false;
     }
 }
 
-void handleOpenPdf(AppState& state) {
-    if (!state.openPdfRequested) {
-        return;
-    }
-
-    state.openPdfRequested = false;
-    compiler::openPdf(state, state.status);
-}
-
-void processAutoCompile(AppState& state) {
+void processAutoCompile(AppState& state, const editor::EditorModule& editorModule) {
     if (!state.autoMode || state.compileInProgress || !state.editorDirty) {
         return;
     }
@@ -102,7 +77,26 @@ void processAutoCompile(AppState& state) {
         return;
     }
 
-    startCompile(state);
+    startCompile(state, editorModule);
+}
+
+void processSaveRequest(AppState& state, const editor::EditorModule& editorModule) {
+    if (!state.saveRequested) {
+        return;
+    }
+    state.saveRequested = false;
+    saveEditor(state, editorModule);
+}
+
+void rebuildFontsIfNeeded(AppState& state, editor::EditorModule& editorModule, ImGuiIO& io) {
+    if (!state.requestFontReload) {
+        return;
+    }
+
+    editor::ensureFonts(editorModule, io);
+    ImGui_ImplOpenGL3_DestroyFontsTexture();
+    ImGui_ImplOpenGL3_CreateFontsTexture();
+    state.requestFontReload = false;
 }
 
 }  // namespace
@@ -134,7 +128,6 @@ int main(int argc, char** argv) {
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
     ImGuiIO& io = ImGui::GetIO();
-    (void)io;
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
@@ -144,30 +137,29 @@ int main(int argc, char** argv) {
     state.texPath = fs::absolute(projectRoot / "assets/sample.tex");
     state.buildDir = fs::absolute(projectRoot / "build-output");
     state.logPath = state.buildDir / "latexmk.log";
-    state.status = "Ready. Edit the LaTeX source and click Compile.";
+    state.openPathBuffer = state.texPath.string();
+    state.status = "Ready. Open a .tex file, edit it, then save or compile.";
 
-    try {
-        loadEditor(state);
-    } catch (const std::exception& ex) {
-        state.editorBuffer.assign(64 * 1024, '\0');
-        state.status = std::string("Failed to load LaTeX source: ") + ex.what();
-    }
+    editor::EditorModule editorModule;
+    editor::initialize(state, editorModule, io);
+    rebuildFontsIfNeeded(state, editorModule, io);
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
         pollCompile(state);
-        processAutoCompile(state);
-        handleOpenPdf(state);
+        processSaveRequest(state, editorModule);
+        processAutoCompile(state, editorModule);
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ui::renderMainWindow(state);
+        ui::renderMainWindow(state, editorModule);
         if (state.compileRequested) {
-            startCompile(state);
+            startCompile(state, editorModule);
         }
+        rebuildFontsIfNeeded(state, editorModule, io);
 
         ImGui::Render();
 
@@ -186,6 +178,7 @@ int main(int argc, char** argv) {
         state.compileFuture.wait();
     }
 
+    editor::shutdown(editorModule);
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
