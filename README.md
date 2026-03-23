@@ -18,7 +18,6 @@ A minimal local LaTeX editor for Windows-oriented GLFW/OpenGL setups. The app no
 - GLFW 3.3+
 - A LaTeX distribution that provides `latexmk` (MiKTeX works)
 - Network access during configure time so CMake can fetch Dear ImGui
-- No separate OpenGL loader package is required; the Dear ImGui OpenGL3 backend loader is used directly
 
 ## Build
 
