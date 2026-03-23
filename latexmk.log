@@ -1,0 +1,947 @@
+Rc files read (in order):
+  NONE
+Latexmk: This is Latexmk, John Collins, 9 March 2026. Version 4.88.
+No existing .aux file, so I'll make a simple one, and require run of *latex.
+Latexmk: applying rule 'pdflatex'...
+Rule 'pdflatex':  Reasons for rerun
+Category 'other':
+  Rerun of 'pdflatex' forced or previously required:
+    Reason or flag: 'Initial setup'
+
+------------
+Run number 1 of rule 'pdflatex'
+------------
+------------
+Running 'pdflatex  -interaction=nonstopmode -synctex=1 -recorder -output-directory="build-output"  "C:/msys64/home/Saile/LatexServer-main/assets/main.tex"'
+------------
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex.fmt)
+ restricted \write18 enabled.
+entering extended mode
+(C:/msys64/home/Saile/LatexServer-main/assets/main.tex
+LaTeX2e <2025-11-01>
+L3 programming layer <2025-12-24>
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/base\article.cls
+Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/base\size10.clo))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/base\inputenc.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/babel\babel.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/babel\txtbabel.def)
+*************************************
+* Local config file bblopts.cfg used
+*
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/arabi\bblopts.cfg)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/babel/locale/es\babel
+-spanish.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/babel-spanish\spanish.l
+df))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphicx.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/graphics\keyval.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphics.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/graphics\trig.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\graphics.c
+fg)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/graphics-def\pdftex.def
+)))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geometry.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/iftex\ifvtex.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/iftex\iftex.sty))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geometry.cfg))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/caption\subcaption.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/caption\caption.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/caption\caption3.sty)))
+
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/pgf/frontendlayer\tikz.
+sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/pgf/basiclayer\pgf.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/pgf/utilities\pgfrcs.st
+y
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfutil
+-common.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfutil
+-latex.def)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfrcs.
+code.tex
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf\pgf.revision.tex)
+))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/pgf/basiclayer\pgfcore.
+sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/pgf/systemlayer\pgfsys.
+sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+s.code.tex
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfkeys
+.code.tex
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfkeys
+libraryfiltered.code.tex))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgf.c
+fg)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+s-pdftex.def
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+s-common-pdf.def)))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+ssoftpath.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/systemlayer\pgfsy
+sprotocol.code.tex))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/xcolor\xcolor.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\color.cfg)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/graphics\mathcolor.ltx)
+)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+e.code.tex
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmath.code
+.tex
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathutil.
+code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathparse
+r.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.basic.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.trigonometric.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.random.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.comparison.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.base.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.round.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.misc.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfunct
+ions.integerarithmetics.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathcalc.
+code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmathfloat
+.code.tex))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfint.code.
+tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epoints.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epathconstruct.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epathusage.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+escopes.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+egraphicstate.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+etransformations.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+equick.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eobjects.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epathprocessing.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+earrows.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eshade.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eimage.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+eexternal.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+elayers.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+etransparency.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+epatterns.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/basiclayer\pgfcor
+erdf.code.tex)))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmodule
+shapes.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmodule
+plot.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/pgf/compatibility\pgfco
+mp-version-0-65.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/pgf/compatibility\pgfco
+mp-version-1-18.sty))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/pgf/utilities\pgffor.st
+y
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/pgf/utilities\pgfkeys.s
+ty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgfkeys
+.code.tex))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/pgf/math\pgfmath.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/math\pgfmath.code
+.tex))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/utilities\pgffor.
+code.tex))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z\tikz.code.tex
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/libraries\pgflibr
+aryplothandlers.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/modules\pgfmodule
+matrix.code.tex)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z/libraries\tikzlibrarytopaths.code.tex)))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/titlesec\titlesec.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/svg\svg.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/koma-script\scrbase.sty
+
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/koma-script\scrlfile.st
+y
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/koma-script\scrlfile-ho
+ok.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/koma-script\scrlogo.sty
+))))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pdftexcmds\pdftexcmds
+.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/infwarerr\infwarerr.s
+ty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/ltxcmds\ltxcmds.sty))
+
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/trimspaces\trimspaces.s
+ty) (C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tools\shellesc.sty)
+)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/transparent\transparent
+.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/transparent\transparent
+-nometadata.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/auxhook\auxhook.sty)))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/titling\titling.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/enumitem\enumitem.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\pifont.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\upzd.fd)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\upsy.fd))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\amssymb.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\amsfonts.sty))
+ (C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsmath.sty
+For additional information on amsmath, use the `?' option.
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amstext.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsgen.sty))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsbsy.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsopn.sty))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/listings\listings.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstpatch.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstmisc.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/listings\listings.cfg))
+==> First Aid for listings.sty no longer applied!
+    Expected:
+        2024/09/23 1.10c (Carsten Heinz)
+    but found:
+        2025/11/14 1.11b (Carsten Heinz)
+    so I'm assuming it got fixed.
+
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcolorbox.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tools\verbatim.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/environ\environ.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/etoolbox\etoolbox.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbraster.cod
+e.tex
+Library (tcolorbox): 'tcbraster.code.tex' version '6.9.0'
+)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbskins.code
+.tex
+Library (tcolorbox): 'tcbskins.code.tex' version '6.9.0'
+
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tikzfill\tikzfill.image
+.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tikzfill\tikzfill-commo
+n.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tikzfill\tikzlibraryfil
+l.image.code.tex))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbskinsjigsa
+w.code.tex
+Library (tcolorbox): 'tcbskinsjigsaw.code.tex' version '6.9.0'
+))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbbreakable.
+code.tex
+Library (tcolorbox): 'tcbbreakable.code.tex' version '6.9.0'
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/pdfcol\pdfcol.sty))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbhooks.code
+.tex
+Library (tcolorbox): 'tcbhooks.code.tex' version '6.9.0'
+)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbtheorems.c
+ode.tex
+Library (tcolorbox): 'tcbtheorems.code.tex' version '6.9.0'
+)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbfitting.co
+de.tex
+Library (tcolorbox): 'tcbfitting.code.tex' version '6.9.0'
+)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcblistingsut
+f8.code.tex
+Library (tcolorbox): 'tcblistingsutf8.code.tex' version '6.9.0'
+
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcblistings.c
+ode.tex
+Library (tcolorbox): 'tcblistings.code.tex' version '6.9.0'
+
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcblistingsco
+re.code.tex
+Library (tcolorbox): 'tcblistingscore.code.tex' version '6.9.0'
+
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbprocessing
+.code.tex
+Library (tcolorbox): 'tcbprocessing.code.tex' version '6.9.0'
+)))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/listingsutf8\listingsut
+f8.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/stringenc\stringenc.s
+ty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pdfescape\pdfescape.s
+ty))))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbexternal.c
+ode.tex
+Library (tcolorbox): 'tcbexternal.code.tex' version '6.9.0'
+)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbmagazine.c
+ode.tex
+Library (tcolorbox): 'tcbmagazine.code.tex' version '6.9.0'
+)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbvignette.c
+ode.tex
+Library (tcolorbox): 'tcbvignette.code.tex' version '6.9.0'
+
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tik
+z/libraries\tikzlibraryfadings.code.tex
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/pgf/libraries\pgflibr
+aryfadings.code.tex)))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tcolorbox\tcbposter.cod
+e.tex
+Library (tcolorbox): 'tcbposter.code.tex' version '6.9.0'
+)) (C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/insbox\insbox.tex)
+ (C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\hyperref.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/kvsetkeys\kvsetkeys.sty
+)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/kvdefinekeys\kvdefine
+keys.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/hycolor\hycolor.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\nameref.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/refcount\refcount.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/gettitlestring\gettit
+lestring.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/kvoptions\kvoptions.sty
+))) (C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\pd1enc.def
+) (C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/intcalc\intcalc.sty
+) (C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\puenc.def)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/url\url.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/bitset\bitset.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/bigintcalc\bigintcalc
+.sty)))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\hpdftex.def
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/rerunfilecheck\rerunfil
+echeck.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/generic/uniquecounter\uniquec
+ounter.sty)))
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tools\array.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tools\tabularx.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tocloft\tocloft.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/base\textcomp.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/fancyhdr\fancyhdr.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/tools\multicol.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/wrapfig\wrapfig.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/float\float.sty)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/fancybox\fancybox.sty
+Style option: `fancybox' v1.4 <2010/05/15> (tvz)
+)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3backend-pdf
+tex.def)
+
+LaTeX Warning: Unused global option(s):
+    [11.5pt].
+
+(C:\msys64\home\Saile\LatexServer-main\build-output\main.aux)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\supp-pdf.mk
+ii
+[Loading MPS to PDF converter (version 2006.09.02).]
+)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\epstopdf-b
+ase.sty
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/00miktex\epstopdf-sys.c
+fg))
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsa.fd)
+(C:\Users\Saile\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsb.fd)
+
+LaTeX Warning: File `usm.jpg' not found on input line 85.
+
+
+! Package pdftex.def Error: File `usm.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.85 {usm.jpg}
+              & ~~~~~~~~
+
+LaTeX Warning: File `elo.jpg' not found on input line 87.
+
+
+! Package pdftex.def Error: File `elo.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.87 {elo.jpg}
+              
+
+Overfull \hbox (13.39095pt too wide) in paragraph at lines 82--90
+[][]
+
+Underfull \hbox (badness 10000) in paragraph at lines 82--90
+
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_02_43/file-1.jpg' not fo
+und on input line 128.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 16_02_43/file-
+1.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.128 ...cáner - 2026-03-09 16_02_43/file-1.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_02_43/file-2.jpg' not fo
+und on input line 134.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 16_02_43/file-
+2.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.134 ...cáner - 2026-03-09 16_02_43/file-2.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_02_43/file-3.jpg' not fo
+und on input line 141.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 16_02_43/file-
+3.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.141 ...cáner - 2026-03-09 16_02_43/file-3.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_16_46/file-1.jpg' not fo
+und on input line 147.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 16_16_46/file-
+1.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.147 ...cáner - 2026-03-09 16_16_46/file-1.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+Overfull \vbox (7.84367pt too high) has occurred while \output is active
+Overfull \vbox (7.84367pt too high) has occurred while \output is active
+Overfull \vbox (7.84367pt too high) has occurred while \output is active
+Overfull \vbox (7.84367pt too high) has occurred while \output is active
+[1{C:/Users/Saile/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}]
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_46_44/file-1.jpg' not fo
+und on input line 161.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 16_46_44/file-
+1.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.161 ...cáner - 2026-03-09 16_46_44/file-1.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_46_44/file-2.jpg' not fo
+und on input line 168.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 16_46_44/file-
+2.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.168 ...cáner - 2026-03-09 16_46_44/file-2.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `image.png' not found on input line 174.
+
+
+! Package pdftex.def Error: File `image.png' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.174 ...graphics[width=0.9\linewidth]{image.png}}
+                                                  
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_53_25/file-1.jpg' not fo
+und on input line 184.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 16_53_25/file-
+1.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.184 ...cáner - 2026-03-09 16_53_25/file-1.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_53_25/file-3.jpg' not fo
+und on input line 190.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 16_53_25/file-
+3.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.190 ...cáner - 2026-03-09 16_53_25/file-3.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_53_25/file-5.jpg' not fo
+und on input line 196.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 16_53_25/file-
+5.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.196 ...cáner - 2026-03-09 16_53_25/file-5.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+[2]
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_10_13/file-1.jpg' not fo
+und on input line 206.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 17_10_13/file-
+1.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.206 ...cáner - 2026-03-09 17_10_13/file-1.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_10_13/file-3.jpg' not fo
+und on input line 212.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 17_10_13/file-
+3.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.212 ...cáner - 2026-03-09 17_10_13/file-3.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_10_13/file-5.jpg' not fo
+und on input line 218.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 17_10_13/file-
+5.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.218 ...cáner - 2026-03-09 17_10_13/file-5.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_38_51/file-1.jpg' not fo
+und on input line 230.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 17_38_51/file-
+1.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.230 ...cáner - 2026-03-09 17_38_51/file-1.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_38_51/file-4.jpg' not fo
+und on input line 236.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 17_38_51/file-
+4.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.236 ...cáner - 2026-03-09 17_38_51/file-4.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_38_51/file-5.jpg' not fo
+und on input line 242.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 17_38_51/file-
+5.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.242 ...cáner - 2026-03-09 17_38_51/file-5.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_51_46/file-1.jpg' not fo
+und on input line 251.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 17_51_46/file-
+1.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.251 ...cáner - 2026-03-09 17_51_46/file-1.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_51_46/file-2.jpg' not fo
+und on input line 257.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 17_51_46/file-
+2.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.257 ...cáner - 2026-03-09 17_51_46/file-2.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+Overfull \vbox (74.43657pt too high) has occurred while \output is active
+Overfull \vbox (74.43657pt too high) has occurred while \output is active
+Overfull \vbox (74.43657pt too high) has occurred while \output is active
+Overfull \vbox (74.43657pt too high) has occurred while \output is active
+[3]
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_51_46/file-3.jpg' not fo
+und on input line 263.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 17_51_46/file-
+3.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.263 ...cáner - 2026-03-09 17_51_46/file-3.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `imagenes/nosatura.png' not found on input line 270.
+
+
+! Package pdftex.def Error: File `imagenes/nosatura.png' not found: using draft
+ setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.270 ...dth=0.9\linewidth]{imagenes/nosatura.png}
+                                                  
+
+LaTeX Warning: File `imagenes/Vheadroom.png' not found on input line 276.
+
+
+! Package pdftex.def Error: File `imagenes/Vheadroom.png' not found: using draf
+t setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.276 ...th=0.9\linewidth]{imagenes/Vheadroom.png}
+                                                  
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 18_06_59/file-2.jpg' not fo
+und on input line 291.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 18_06_59/file-
+2.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.291 ...cáner - 2026-03-09 18_06_59/file-2.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 18_06_59/file-3.jpg' not fo
+und on input line 298.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 18_06_59/file-
+3.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.298 ...cáner - 2026-03-09 18_06_59/file-3.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 18_06_59/file-1.jpg' not fo
+und on input line 305.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 18_06_59/file-
+1.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.305 ...cáner - 2026-03-09 18_06_59/file-1.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+Overfull \vbox (64.74591pt too high) has occurred while \output is active
+Overfull \vbox (64.74591pt too high) has occurred while \output is active
+Overfull \vbox (52.74591pt too high) has occurred while \output is active
+Overfull \vbox (52.74591pt too high) has occurred while \output is active
+Overfull \vbox (52.74591pt too high) has occurred while \output is active
+Overfull \vbox (52.74591pt too high) has occurred while \output is active
+[4]
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 18_11_29/file-2.jpg' not fo
+und on input line 314.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 18_11_29/file-
+2.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.314 ...cáner - 2026-03-09 18_11_29/file-2.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 18_11_29/file-1.jpg' not fo
+und on input line 321.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 18_11_29/file-
+1.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.321 ...cáner - 2026-03-09 18_11_29/file-1.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+
+LaTeX Warning: File `file (1)/Escáner - 2026-03-09 18_11_29/file-3.jpg' not fo
+und on input line 327.
+
+
+! Package pdftex.def Error: File `file (1)/Escáner - 2026-03-09 18_11_29/file-
+3.jpg' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.327 ...cáner - 2026-03-09 18_11_29/file-3.jpg}}
+                                                  
+Missing character: There is no � in font cmtt10!
+Missing character: There is no � in font cmtt10!
+[5] (C:\msys64\home\Saile\LatexServer-main\build-output\main.aux)
+
+Package rerunfilecheck Warning: File `main.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+ )
+(see the transcript file for additional information)<C:/Users/Saile/AppData/Loc
+al/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx10.pfb><C:/Users/Saile/Ap
+pData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users
+/Saile/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi10.pfb>
+<C:/Users/Saile/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cm
+mi5.pfb><C:/Users/Saile/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfon
+ts/cm/cmmi7.pfb><C:/Users/Saile/AppData/Local/Programs/MiKTeX/fonts/type1/publi
+c/amsfonts/cm/cmr10.pfb><C:/Users/Saile/AppData/Local/Programs/MiKTeX/fonts/typ
+e1/public/amsfonts/cm/cmr7.pfb><C:/Users/Saile/AppData/Local/Programs/MiKTeX/fo
+nts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/Saile/AppData/Local/Programs/
+MiKTeX/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Users/Saile/AppData/Local/
+Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt10.pfb><C:/Users/Saile/AppDa
+ta/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt9.pfb>
+Output written on C:\msys64\home\Saile\LatexServer-main\build-output\main.pdf (
+5 pages, 164840 bytes).
+SyncTeX written on C:\msys64\home\Saile\LatexServer-main\build-output/main.synctex.gz.
+Transcript written on C:\msys64\home\Saile\LatexServer-main\build-output\main.l
+og.
+Latexmk: Getting log file 'build-output/main.log'
+Latexmk: Examining 'build-output/main.fls'
+Latexmk: Examining 'build-output/main.log'
+Latexmk: Missing input file 'usm.jpg' message in .log file:
+  LaTeX Warning: File `usm.jpg' not found on input line 85.
+Latexmk: Missing input file 'elo.jpg' message in .log file:
+  LaTeX Warning: File `elo.jpg' not found on input line 87.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 16_02_43/file-1.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_02_43/file-1.jpg' not found on input line 128.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 16_02_43/file-2.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_02_43/file-2.jpg' not found on input line 134.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 16_02_43/file-3.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_02_43/file-3.jpg' not found on input line 141.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 16_16_46/file-1.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_16_46/file-1.jpg' not found on input line 147.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 16_46_44/file-1.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_46_44/file-1.jpg' not found on input line 161.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 16_46_44/file-2.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_46_44/file-2.jpg' not found on input line 168.
+Latexmk: Missing input file 'image.png' message in .log file:
+  LaTeX Warning: File `image.png' not found on input line 174.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 16_53_25/file-1.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_53_25/file-1.jpg' not found on input line 184.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 16_53_25/file-3.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_53_25/file-3.jpg' not found on input line 190.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 16_53_25/file-5.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 16_53_25/file-5.jpg' not found on input line 196.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 17_10_13/file-1.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_10_13/file-1.jpg' not found on input line 206.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 17_10_13/file-3.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_10_13/file-3.jpg' not found on input line 212.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 17_10_13/file-5.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_10_13/file-5.jpg' not found on input line 218.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 17_38_51/file-1.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_38_51/file-1.jpg' not found on input line 230.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 17_38_51/file-4.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_38_51/file-4.jpg' not found on input line 236.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 17_38_51/file-5.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_38_51/file-5.jpg' not found on input line 242.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 17_51_46/file-1.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_51_46/file-1.jpg' not found on input line 251.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 17_51_46/file-2.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_51_46/file-2.jpg' not found on input line 257.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 17_51_46/file-3.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 17_51_46/file-3.jpg' not found on input line 263.
+Latexmk: Missing input file 'imagenes/nosatura.png' message in .log file:
+  LaTeX Warning: File `imagenes/nosatura.png' not found on input line 270.
+Latexmk: Missing input file 'imagenes/Vheadroom.png' message in .log file:
+  LaTeX Warning: File `imagenes/Vheadroom.png' not found on input line 276.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 18_06_59/file-2.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 18_06_59/file-2.jpg' not found on input line 291.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 18_06_59/file-3.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 18_06_59/file-3.jpg' not found on input line 298.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 18_06_59/file-1.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 18_06_59/file-1.jpg' not found on input line 305.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 18_11_29/file-2.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 18_11_29/file-2.jpg' not found on input line 314.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 18_11_29/file-1.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 18_11_29/file-1.jpg' not found on input line 321.
+Latexmk: Missing input file 'file (1)/Escáner - 2026-03-09 18_11_29/file-3.jpg' message in .log file:
+  LaTeX Warning: File `file (1)/Escáner - 2026-03-09 18_11_29/file-3.jpg' not found on input line 327.
+Latexmk: References changed.
+Latexmk: Log file says output to 'C:/msys64/home/Saile/LatexServer-main/build-output/main.pdf'
+Latexmk: Summary of warnings from last run of *latex:
+  =====Latex reported missing or unavailable character(s).
+=====See log file for details.
+Latexmk: ====Problematic refs and citations with line #s in .tex file:
+  Missing character: There is no � in font cmtt10!
+  Missing character: There is no � in font cmtt10!
+  Missing character: There is no � in font cmtt10!
+  Missing character: There is no � in font cmtt10!
+  Missing character: There is no � in font cmtt10!
+  Missing character: There is no � in font cmtt10!
+  Missing character: There is no � in font cmtt10!
+ And 41 more --- see log file 'build-output/main.log'
+Latexmk: Errors, so I did not complete making targets
+Collected error summary (may duplicate other messages):
+  pdflatex: Command for 'pdflatex' gave return code 1
+      Refer to 'build-output/main.log' and/or above output for details
+
+Latexmk: Sometimes, the -f option can be used to get latexmk
+  to try to force complete processing.
+  But normally, you will need to correct the file(s) that caused the
+  error, and then rerun latexmk.
+  In some cases, it is best to clean out generated files before rerunning
+  latexmk after you've corrected the files.

@@ -163,6 +163,7 @@ int main(int argc, char** argv) {
         if (state.compileRequested) {
             startCompile(state, editorModule);
         }
+        rebuildFontsIfNeeded(state, editorModule, io);
 
         ImGui::Render();
 
