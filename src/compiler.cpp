@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 
 namespace fs = std::filesystem;
 
@@ -11,6 +12,14 @@ namespace {
 
 int runCommand(const std::string& command) {
     return std::system(command.c_str());
+}
+
+std::string buildShellCommand(const fs::path& workingDirectory, const std::string& commandWithRedirect) {
+#ifdef _WIN32
+    return "cd /d " + quotePath(workingDirectory) + " && " + commandWithRedirect;
+#else
+    return "cd " + quotePath(workingDirectory) + " && " + commandWithRedirect;
+#endif
 }
 
 }  // namespace
@@ -63,12 +72,19 @@ std::string buildOptionWithPath(const std::string& flag, const fs::path& path) {
 
 std::string readFile(const fs::path& path) {
     std::ifstream input(path, std::ios::binary);
+    if (!input) {
+        throw std::runtime_error("Unable to open file: " + path.string());
+    }
+
     std::ostringstream buffer;
     buffer << input.rdbuf();
     return buffer.str();
 }
 
 bool writeFile(const fs::path& path, const std::string& content, std::string& error) {
+    std::error_code ec;
+    fs::create_directories(path.parent_path(), ec);
+
     std::ofstream output(path, std::ios::binary | std::ios::trunc);
     if (!output) {
         error = "Unable to save file: " + path.string();
@@ -91,6 +107,8 @@ CompileResult compilePdf(const CompileRequest& request) {
     const fs::path absoluteTexPath = fs::absolute(request.texPath);
     const fs::path absoluteBuildDir = fs::absolute(request.buildDir);
     const fs::path absoluteLogPath = fs::absolute(request.logPath);
+    const fs::path workingDirectory = absoluteTexPath.parent_path();
+
     fs::create_directories(absoluteBuildDir, ec);
     fs::create_directories(absoluteLogPath.parent_path(), ec);
 
@@ -98,6 +116,7 @@ CompileResult compilePdf(const CompileRequest& request) {
 
     std::vector<std::string> args = {
         "-pdf",
+        "-g",
         "-interaction=nonstopmode",
         "-synctex=1",
         buildOptionWithPath("-outdir", absoluteBuildDir),
@@ -105,40 +124,32 @@ CompileResult compilePdf(const CompileRequest& request) {
     };
 
     const std::string latexmkCommand = buildCommand("latexmk", args);
-    result.command = latexmkCommand + " > " + quotePath(absoluteLogPath) + " 2>&1";
+    const std::string commandWithRedirect = latexmkCommand + " > " + quotePath(absoluteLogPath) + " 2>&1";
+    result.command = buildShellCommand(workingDirectory, commandWithRedirect);
     result.exitCode = runCommand(result.command);
     result.logPath = absoluteLogPath;
+
+    const bool pdfExists = fs::exists(expectedPdf);
+    if (pdfExists) {
+        const auto pdfWriteTime = fs::last_write_time(expectedPdf, ec);
+        const auto texWriteTime = fs::last_write_time(absoluteTexPath, ec);
+        if (!ec && pdfWriteTime >= texWriteTime) {
+            result.success = true;
+            result.pdfPath = expectedPdf;
+            result.message = result.exitCode == 0
+                ? "Compiled successfully: " + expectedPdf.string()
+                : "latexmk reported warnings/errors, but an updated PDF was generated: " + expectedPdf.string();
+            return result;
+        }
+    }
 
     if (result.exitCode != 0) {
         result.message = "latexmk failed. See log: " + absoluteLogPath.string();
         return result;
     }
 
-    if (!fs::exists(expectedPdf)) {
-        result.message = "latexmk finished but the expected PDF was not found: " + expectedPdf.string();
-        return result;
-    }
-
-    result.success = true;
-    result.pdfPath = expectedPdf;
-    result.message = "Compiled successfully: " + expectedPdf.string();
+    result.message = "latexmk finished but the expected PDF was not found: " + expectedPdf.string();
     return result;
-}
-
-bool openPdf(const AppState& state, std::string& status) {
-    if (state.lastPdfPath.empty() || !fs::exists(state.lastPdfPath)) {
-        status = "No generated PDF is available yet.";
-        return false;
-    }
-
-    const std::string command = "start \"\" " + quotePath(state.lastPdfPath);
-    if (runCommand(command) != 0) {
-        status = "Failed to open the PDF with the default Windows viewer.";
-        return false;
-    }
-
-    status = "Opened PDF: " + state.lastPdfPath.string();
-    return true;
 }
 
 }  // namespace compiler
