@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 
 namespace fs = std::filesystem;
 
@@ -63,12 +64,19 @@ std::string buildOptionWithPath(const std::string& flag, const fs::path& path) {
 
 std::string readFile(const fs::path& path) {
     std::ifstream input(path, std::ios::binary);
+    if (!input) {
+        throw std::runtime_error("Unable to open file: " + path.string());
+    }
+
     std::ostringstream buffer;
     buffer << input.rdbuf();
     return buffer.str();
 }
 
 bool writeFile(const fs::path& path, const std::string& content, std::string& error) {
+    std::error_code ec;
+    fs::create_directories(path.parent_path(), ec);
+
     std::ofstream output(path, std::ios::binary | std::ios::trunc);
     if (!output) {
         error = "Unable to save file: " + path.string();
@@ -123,22 +131,6 @@ CompileResult compilePdf(const CompileRequest& request) {
     result.pdfPath = expectedPdf;
     result.message = "Compiled successfully: " + expectedPdf.string();
     return result;
-}
-
-bool openPdf(const AppState& state, std::string& status) {
-    if (state.lastPdfPath.empty() || !fs::exists(state.lastPdfPath)) {
-        status = "No generated PDF is available yet.";
-        return false;
-    }
-
-    const std::string command = "start \"\" " + quotePath(state.lastPdfPath);
-    if (runCommand(command) != 0) {
-        status = "Failed to open the PDF with the default Windows viewer.";
-        return false;
-    }
-
-    status = "Opened PDF: " + state.lastPdfPath.string();
-    return true;
 }
 
 }  // namespace compiler
