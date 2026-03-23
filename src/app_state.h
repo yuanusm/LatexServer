@@ -8,6 +8,12 @@
 
 namespace fs = std::filesystem;
 
+struct CompileRequest {
+    fs::path texPath;
+    fs::path buildDir;
+    fs::path logPath;
+};
+
 struct CompileResult {
     bool success = false;
     fs::path pdfPath;

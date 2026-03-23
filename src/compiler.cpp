@@ -84,13 +84,13 @@ bool writeFile(const fs::path& path, const std::string& content, std::string& er
     return true;
 }
 
-CompileResult compilePdf(const AppState& state) {
+CompileResult compilePdf(const CompileRequest& request) {
     CompileResult result;
 
     std::error_code ec;
-    const fs::path absoluteTexPath = fs::absolute(state.texPath);
-    const fs::path absoluteBuildDir = fs::absolute(state.buildDir);
-    const fs::path absoluteLogPath = fs::absolute(state.logPath);
+    const fs::path absoluteTexPath = fs::absolute(request.texPath);
+    const fs::path absoluteBuildDir = fs::absolute(request.buildDir);
+    const fs::path absoluteLogPath = fs::absolute(request.logPath);
     fs::create_directories(absoluteBuildDir, ec);
     fs::create_directories(absoluteLogPath.parent_path(), ec);
 

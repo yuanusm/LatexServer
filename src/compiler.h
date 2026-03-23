@@ -14,7 +14,7 @@ std::string buildCommand(const std::string& executable, const std::vector<std::s
 std::string buildOptionWithPath(const std::string& flag, const std::filesystem::path& path);
 std::string readFile(const std::filesystem::path& path);
 bool writeFile(const std::filesystem::path& path, const std::string& content, std::string& error);
-CompileResult compilePdf(const AppState& state);
+CompileResult compilePdf(const CompileRequest& request);
 bool openPdf(const AppState& state, std::string& status);
 
 }  // namespace compiler

@@ -51,8 +51,15 @@ void startCompile(AppState& state) {
     state.compileRequested = false;
     state.status = "Compiling with latexmk...";
     state.lastAutoCompileAt = std::chrono::steady_clock::now();
-    state.compileFuture = std::async(std::launch::async, [state]() {
-        return compiler::compilePdf(state);
+
+    const CompileRequest request{
+        state.texPath,
+        state.buildDir,
+        state.logPath
+    };
+
+    state.compileFuture = std::async(std::launch::async, [request]() {
+        return compiler::compilePdf(request);
     });
 }
 
