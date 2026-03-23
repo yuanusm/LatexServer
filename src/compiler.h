@@ -15,6 +15,5 @@ std::string buildOptionWithPath(const std::string& flag, const std::filesystem::
 std::string readFile(const std::filesystem::path& path);
 bool writeFile(const std::filesystem::path& path, const std::string& content, std::string& error);
 CompileResult compilePdf(const CompileRequest& request);
-bool openPdf(const AppState& state, std::string& status);
 
 }  // namespace compiler
