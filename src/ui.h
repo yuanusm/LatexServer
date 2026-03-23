@@ -1,11 +1,10 @@
 #pragma once
 
 #include "app_state.h"
-
-struct GLFWwindow;
+#include "editor.h"
 
 namespace ui {
 
-void renderMainWindow(AppState& state);
+void renderMainWindow(AppState& state, editor::EditorModule& editorModule);
 
 }  // namespace ui

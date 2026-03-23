@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <future>
 #include <string>
-#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -30,19 +29,20 @@ struct AppState {
     fs::path logPath;
     fs::path lastPdfPath;
 
-    std::vector<char> editorBuffer;
     bool editorDirty = false;
     bool autoMode = false;
+    bool saveRequested = false;
     bool compileRequested = false;
-    bool openPdfRequested = false;
     bool compileInProgress = false;
+    bool showPreferences = false;
+    bool showOpenDialog = false;
+    bool requestFontReload = false;
 
     std::chrono::steady_clock::time_point lastEditAt = std::chrono::steady_clock::now();
-    std::chrono::steady_clock::time_point lastAutoCompileAt = std::chrono::steady_clock::now();
-
     std::future<CompileResult> compileFuture;
 
     std::string status = "Ready.";
     std::string lastCommand;
+    std::string openPathBuffer;
     bool lastCompileSuccess = false;
 };
