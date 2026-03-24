@@ -4,6 +4,7 @@
 #include "file_tree.h"
 #include "ui.h"
 
+#include "TextEditor.h"
 #include "core/editor_sync.hpp"
 #include "core/file_sync.hpp"
 #include "network/client.hpp"

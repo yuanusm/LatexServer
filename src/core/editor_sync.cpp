@@ -1,5 +1,6 @@
 #include "core/editor_sync.hpp"
 
+#include "TextEditor.h"
 #include "network/client.hpp"
 
 #include <chrono>
