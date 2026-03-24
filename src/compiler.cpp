@@ -43,7 +43,7 @@ fs::path detectProjectRoot(const fs::path& argv0) {
 }
 
 std::string quotePath(const fs::path& path) {
-    const std::string input = fs::absolute(path).string();
+    const std::string input = path.string();
     std::string escaped;
     escaped.reserve(input.size() + 2);
     escaped.push_back('"');
@@ -108,6 +108,7 @@ CompileResult compilePdf(const CompileRequest& request) {
     const fs::path absoluteBuildDir = fs::absolute(request.buildDir);
     const fs::path absoluteLogPath = fs::absolute(request.logPath);
     const fs::path workingDirectory = absoluteTexPath.parent_path();
+    const std::string texFileName = absoluteTexPath.filename().string();
 
     fs::create_directories(absoluteBuildDir, ec);
     fs::create_directories(absoluteLogPath.parent_path(), ec);
@@ -120,7 +121,7 @@ CompileResult compilePdf(const CompileRequest& request) {
         "-interaction=nonstopmode",
         "-synctex=1",
         buildOptionWithPath("-outdir", absoluteBuildDir),
-        quotePath(absoluteTexPath)
+        quotePath(texFileName)
     };
 
     const std::string latexmkCommand = buildCommand("latexmk", args);

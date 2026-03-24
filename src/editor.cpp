@@ -80,6 +80,8 @@ TextEditor::LanguageDefinition makeLatexLanguageDefinition() {
     language.mCaseSensitive = true;
     language.mAutoIndentation = true;
     language.mSingleLineComment = "%";
+    language.mCommentStart = "%";
+    language.mCommentEnd.clear();
 
     language.mKeywords = {
         "\\begin", "\\end", "\\section", "\\subsection", "\\subsubsection",
@@ -97,7 +99,7 @@ TextEditor::LanguageDefinition makeLatexLanguageDefinition() {
 
     using PaletteIndex = TextEditor::PaletteIndex;
     language.mTokenRegexStrings.push_back({R"((\\[A-Za-z@]+))", PaletteIndex::Keyword});
-    language.mTokenRegexStrings.push_back({R"(([A-Za-z]+))", PaletteIndex::Keyword});
+    language.mTokenRegexStrings.push_back({"[a-zA-Z]+", PaletteIndex::Keyword});
     language.mTokenRegexStrings.push_back({R"((\\[^A-Za-z\s]))", PaletteIndex::Keyword});
     language.mTokenRegexStrings.push_back({R"((\$\$[^$]*\$\$))", PaletteIndex::String});
     language.mTokenRegexStrings.push_back({R"((\$[^$\n]+\$))", PaletteIndex::String});
@@ -203,6 +205,13 @@ void renderEditor(AppState& state, EditorModule& module, const ImVec2& size) {
         return;
     }
 
+    auto palette = module.textEditor->GetPalette();
+    palette[static_cast<std::size_t>(TextEditor::PaletteIndex::Keyword)] = ImColor(module.preferences.keywordColor);
+    palette[static_cast<std::size_t>(TextEditor::PaletteIndex::Default)] = ImColor(module.preferences.textColor);
+    palette[static_cast<std::size_t>(TextEditor::PaletteIndex::Background)] = ImColor(module.preferences.backgroundColor);
+    palette[static_cast<std::size_t>(TextEditor::PaletteIndex::Comment)] = ImColor(module.preferences.commentColor);
+    module.textEditor->SetPalette(palette);
+
     ImFont* selectedFont = nullptr;
     if (module.activeFontIndex >= 0 && module.activeFontIndex < static_cast<int>(module.loadedFonts.size())) {
         selectedFont = module.loadedFonts[module.activeFontIndex];
@@ -231,7 +240,6 @@ void applyPreferences(EditorModule& module) {
     module.textEditor->SetPalette(makePalette(module.preferences));
     module.textEditor->SetShowWhitespaces(module.preferences.showWhitespace);
     module.textEditor->SetTabSize(module.preferences.tabSize);
-    module.fontAtlasDirty = true;
 }
 
 void ensureFonts(EditorModule& module, ImGuiIO& io) {
@@ -256,7 +264,6 @@ void ensureFonts(EditorModule& module, ImGuiIO& io) {
     }
 
     module.activeFontIndex = module.preferences.selectedFontIndex;
-    module.fontAtlasDirty = false;
 }
 
 

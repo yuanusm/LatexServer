@@ -35,7 +35,6 @@ struct EditorModule {
     std::vector<FontOption> fontOptions;
     std::vector<ImFont*> loadedFonts;
     int activeFontIndex = -1;
-    bool fontAtlasDirty = false;
     bool initialized = false;
 };
 
