@@ -1,6 +1,7 @@
 #include "file_tree.h"
 
 #include "compiler.h"
+#include "network/client.hpp"
 
 #include <imgui.h>
 
@@ -149,6 +150,10 @@ void renderCreationPopups(AppState& state, editor::EditorModule& editorModule, F
                 } else {
                     fs::create_directories(target.parent_path());
                     if (createEmptyFile(target, error)) {
+                        if (state.collab.connected && state.collab.client) {
+                            std::string sendError;
+                            state.collab.client->send({{"type", "file_create"}, {"path", target.lexically_relative(state.projectRoot).generic_string()}}, sendError);
+                        }
                         editor::loadDocument(state, editorModule, target, error);
                         module.newFilePath.clear();
                         ImGui::CloseCurrentPopup();
@@ -222,6 +227,11 @@ void renderCreationPopups(AppState& state, editor::EditorModule& editorModule, F
                     if (ec) {
                         error = "Unable to copy file into project: " + destination.string();
                     } else {
+                        if (state.collab.connected && state.collab.client) {
+                            std::string fileContent = compiler::readFile(destination);
+                            std::string sendError;
+                            state.collab.client->send({{"type", "file_upload"}, {"path", destination.lexically_relative(state.projectRoot).generic_string()}, {"content", fileContent}}, sendError);
+                        }
                         state.status = "Copied file into project: " + destination.string();
                         module.copySourcePath.clear();
                         module.copyDestinationPath.clear();
@@ -255,6 +265,10 @@ bool resolveProjectPath(const fs::path& projectRoot, const fs::path& candidate, 
         return false;
     }
 
+    if (candidate.generic_string().find("..") != std::string::npos) {
+        error = "Path must not contain '..'.";
+        return false;
+    }
 
     const fs::path root = fs::weakly_canonical(projectRoot);
     fs::path combined = candidate;

@@ -2,10 +2,13 @@
 
 #include "compiler.h"
 #include "file_tree.h"
+#include "network/client.hpp"
+#include "network/protocol.hpp"
 
 #include <imgui.h>
 
 #include <array>
+#include <cstdint>
 #include <cstdio>
 #include <filesystem>
 #include <string>
@@ -44,6 +47,47 @@ void renderToolbar(AppState& state) {
     ImGui::SameLine();
     if (ImGui::Button("Preferences")) {
         state.showPreferences = !state.showPreferences;
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Connect")) {
+        std::string error;
+        if (state.collab.client && state.collab.client->connect(state.collab.host, static_cast<std::uint16_t>(state.collab.port), error)) {
+            state.collab.connected = true;
+            state.status = "Connected to collaboration server.";
+            state.collab.client->send({{"type", "file_list"}}, error);
+        } else {
+            state.status = "Connection failed: " + error;
+            state.collab.connected = false;
+        }
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Disconnect")) {
+        if (state.collab.client) {
+            state.collab.client->disconnect();
+        }
+        state.collab.connected = false;
+        state.collab.users.clear();
+        state.status = "Disconnected from collaboration server.";
+    }
+
+    ImGui::SameLine();
+    char hostBuffer[128] = {};
+    std::snprintf(hostBuffer, sizeof(hostBuffer), "%s", state.collab.host.c_str());
+    ImGui::SetNextItemWidth(130.0f);
+    if (ImGui::InputText("Host", hostBuffer, sizeof(hostBuffer))) {
+        state.collab.host = hostBuffer;
+    }
+
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(80.0f);
+    ImGui::InputInt("Port", &state.collab.port);
+    if (state.collab.port < 1) {
+        state.collab.port = 1;
+    }
+    if (state.collab.port > 65535) {
+        state.collab.port = 65535;
     }
 
     ImGui::SameLine();
@@ -169,7 +213,19 @@ void renderMainWindow(AppState& state, editor::EditorModule& editorModule, file_
     const ImVec2 contentSize = ImGui::GetContentRegionAvail();
     const float treeWidth = contentSize.x * 0.28f;
 
-    file_tree::renderPanel(state, editorModule, fileTreeModule, ImVec2(treeWidth, contentSize.y));
+    const float usersHeight = 170.0f;
+    file_tree::renderPanel(state, editorModule, fileTreeModule, ImVec2(treeWidth, contentSize.y - usersHeight - 8.0f));
+    ImGui::BeginChild("UsersPanel", ImVec2(treeWidth, usersHeight), true);
+    ImGui::TextUnformatted("Users");
+    ImGui::Separator();
+    for (const auto& user : state.collab.users) {
+        ImGui::BulletText("#%d %s", user.id, user.name.c_str());
+    }
+    if (state.collab.users.empty()) {
+        ImGui::TextDisabled("No connected users");
+    }
+    ImGui::EndChild();
+
     ImGui::SameLine();
     ImGui::BeginChild("EditorHostPanel", ImVec2(0.0f, contentSize.y), true);
     editor::renderEditor(state, editorModule, ImGui::GetContentRegionAvail());
