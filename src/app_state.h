@@ -3,9 +3,15 @@
 #include <chrono>
 #include <filesystem>
 #include <future>
+#include <memory>
 #include <string>
+#include <vector>
 
 namespace fs = std::filesystem;
+
+namespace network {
+class CollabClient;
+}
 
 struct CompileRequest {
     fs::path texPath;
@@ -23,6 +29,25 @@ struct CompileResult {
 };
 
 struct AppState {
+    struct UserInfo {
+        int id = 0;
+        std::string name;
+    };
+
+    struct CollaborationState {
+        std::string host = "127.0.0.1";
+        int port = 9090;
+        bool connected = false;
+        bool suppressOutgoingSync = false;
+        int syncDebounceMs = 400;
+        std::unique_ptr<network::CollabClient> client;
+        std::vector<UserInfo> users;
+        std::vector<std::string> remoteFiles;
+        std::string lastSyncedContent;
+        std::string lastOpenedRemotePath;
+        std::chrono::steady_clock::time_point lastSyncSentAt = std::chrono::steady_clock::now();
+    };
+
     fs::path projectRoot;
     fs::path texPath;
     fs::path buildDir;
@@ -45,4 +70,6 @@ struct AppState {
     std::string lastCommand;
     std::string openPathBuffer;
     bool lastCompileSuccess = false;
+
+    CollaborationState collab;
 };

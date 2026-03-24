@@ -4,6 +4,10 @@
 #include "file_tree.h"
 #include "ui.h"
 
+#include "core/editor_sync.hpp"
+#include "core/file_sync.hpp"
+#include "network/client.hpp"
+
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
@@ -89,6 +93,51 @@ void processSaveRequest(AppState& state, const editor::EditorModule& editorModul
     saveEditor(state, editorModule);
 }
 
+
+void pollCollaboration(AppState& state, editor::EditorModule& editorModule) {
+    if (!state.collab.client || !state.collab.connected) {
+        return;
+    }
+
+    for (const auto& message : state.collab.client->pollIncoming()) {
+        const std::string type = message.value("type", "");
+        if (type == "sync") {
+            if (editorModule.textEditor) {
+                const std::string content = message.value("content", "");
+                if (content != editorModule.textEditor->GetText()) {
+                    state.collab.suppressOutgoingSync = true;
+                    editorModule.textEditor->SetText(content);
+                    state.collab.suppressOutgoingSync = false;
+                    state.collab.lastSyncedContent = content;
+                    state.editorDirty = true;
+                    state.status = "Document synchronized from server.";
+                }
+            }
+            continue;
+        }
+
+        if (type == "users") {
+            state.collab.users.clear();
+            if (message.contains("list") && message["list"].is_array()) {
+                for (const auto& item : message["list"]) {
+                    AppState::UserInfo user;
+                    user.id = item.value("id", 0);
+                    user.name = item.value("name", "");
+                    state.collab.users.push_back(std::move(user));
+                }
+            }
+            continue;
+        }
+
+        core::file_sync::applyServerMessage(state, message);
+    }
+
+    if (!state.collab.client->isConnected()) {
+        state.collab.connected = false;
+        state.status = "Disconnected from collaboration server.";
+    }
+}
+
 void rebuildFontsIfNeeded(AppState& state, editor::EditorModule& editorModule, ImGuiIO& io) {
     if (!state.fontDirty) {
         return;
@@ -134,6 +183,7 @@ int main(int argc, char** argv) {
     ImGui_ImplOpenGL3_Init("#version 130");
 
     AppState state;
+    state.collab.client = std::make_unique<network::CollabClient>();
     state.projectRoot = projectRoot;
     state.texPath = fs::absolute(projectRoot / "assets/sample.tex");
     state.buildDir = fs::absolute(projectRoot / "build-output");
@@ -153,6 +203,8 @@ int main(int argc, char** argv) {
         pollCompile(state);
         processSaveRequest(state, editorModule);
         processAutoCompile(state, editorModule);
+        core::editor_sync::processOutgoingSync(state, editorModule);
+        pollCollaboration(state, editorModule);
         rebuildFontsIfNeeded(state, editorModule, io);
 
         ImGui_ImplOpenGL3_NewFrame();

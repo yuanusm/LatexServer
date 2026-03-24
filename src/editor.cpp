@@ -4,6 +4,7 @@
 
 #include "TextEditor.h"
 #include "compiler.h"
+#include "network/client.hpp"
 
 #include <algorithm>
 #include <array>
@@ -173,6 +174,10 @@ bool loadDocument(AppState& state, EditorModule& module, const fs::path& path, s
         state.texPath = absolutePath;
         state.editorDirty = false;
         state.status = "Loaded: " + absolutePath.string();
+        if (state.collab.connected && state.collab.client) {
+            std::string sendError;
+            state.collab.client->send({{"type", "file_open"}, {"path", absolutePath.lexically_relative(state.projectRoot).generic_string()}}, sendError);
+        }
         return true;
     } catch (const std::exception& ex) {
         error = std::string("Failed to load file: ") + ex.what();
@@ -195,6 +200,10 @@ bool saveDocument(AppState& state, const EditorModule& module, std::string& erro
     if (written) {
         state.editorDirty = false;
         state.status = "Saved: " + state.texPath.string();
+        if (state.collab.connected && state.collab.client) {
+            std::string sendError;
+            state.collab.client->send({{"type", "file_save"}, {"path", state.texPath.lexically_relative(state.projectRoot).generic_string()}, {"content", module.textEditor->GetText()}}, sendError);
+        }
     }
     return written;
 }
