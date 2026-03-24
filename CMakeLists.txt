@@ -65,8 +65,6 @@ target_link_libraries(texteditor_lib PUBLIC imgui_lib)
 add_library(collab_lib
     src/network/client.cpp
     src/network/server.cpp
-    src/core/editor_sync.cpp
-    src/core/file_sync.cpp
 )
 
 target_include_directories(collab_lib PUBLIC
@@ -88,6 +86,8 @@ add_executable(latex_server
     src/editor.cpp
     src/file_tree.cpp
     src/ui.cpp
+    src/core/editor_sync.cpp
+    src/core/file_sync.cpp
 )
 
 target_include_directories(latex_server PRIVATE src)
