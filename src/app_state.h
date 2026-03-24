@@ -36,7 +36,7 @@ struct AppState {
     bool compileInProgress = false;
     bool showPreferences = false;
     bool showOpenDialog = false;
-    bool requestFontReload = false;
+    bool fontDirty = false;
 
     std::chrono::steady_clock::time_point lastEditAt = std::chrono::steady_clock::now();
     std::future<CompileResult> compileFuture;

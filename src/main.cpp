@@ -90,14 +90,14 @@ void processSaveRequest(AppState& state, const editor::EditorModule& editorModul
 }
 
 void rebuildFontsIfNeeded(AppState& state, editor::EditorModule& editorModule, ImGuiIO& io) {
-    if (!state.requestFontReload) {
+    if (!state.fontDirty) {
         return;
     }
 
     editor::ensureFonts(editorModule, io);
     ImGui_ImplOpenGL3_DestroyFontsTexture();
     ImGui_ImplOpenGL3_CreateFontsTexture();
-    state.requestFontReload = false;
+    state.fontDirty = false;
 }
 
 }  // namespace
@@ -163,7 +163,6 @@ int main(int argc, char** argv) {
         if (state.compileRequested) {
             startCompile(state, editorModule);
         }
-        rebuildFontsIfNeeded(state, editorModule, io);
 
         ImGui::Render();
 

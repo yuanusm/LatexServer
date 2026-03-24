@@ -155,7 +155,7 @@ void renderMainWindow(AppState& state, editor::EditorModule& editorModule, file_
     const bool reloaded = renderOpenDialog(state, editorModule);
     const bool fontChanged = renderPreferences(state, editorModule);
     if (fontChanged) {
-        state.requestFontReload = true;
+        state.fontDirty = true;
     }
 
     ImGui::Separator();
