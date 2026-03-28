@@ -1,12 +1,19 @@
 #include "network/server.hpp"
 
 #include "compiler.h"
+#include "log.h"
 
 #include <algorithm>
+#include <array>
+#include <cerrno>
+#include <chrono>
 #include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <fstream>
-#include <iostream>
 #include <sstream>
+#include <system_error>
 #include <vector>
 
 #ifdef _WIN32
@@ -83,88 +90,80 @@ std::string base64Encode(const std::vector<std::uint8_t>& bytes) {
 }
 
 #ifdef _WIN32
-network::CollabServer::CompileOutcome runLatexmkWindows(const fs::path& projectRoot) {
-    network::CollabServer::CompileOutcome outcome;
-    outcome.pdfPath = projectRoot / "main.pdf";
-
-    SECURITY_ATTRIBUTES sa{};
-    sa.nLength = sizeof(sa);
-    sa.bInheritHandle = TRUE;
-
-    HANDLE readPipe = nullptr;
-    HANDLE writePipe = nullptr;
-    if (!CreatePipe(&readPipe, &writePipe, &sa, 0)) {
-        outcome.log = "Failed to create output pipe for latexmk.";
-        return outcome;
-    }
-
-    SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
-
-    STARTUPINFOA startupInfo{};
-    startupInfo.cb = sizeof(startupInfo);
-    startupInfo.dwFlags = STARTF_USESTDHANDLES;
-    startupInfo.hStdOutput = writePipe;
-    startupInfo.hStdError = writePipe;
-    startupInfo.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
-
-    PROCESS_INFORMATION processInfo{};
-    std::string command = "latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex";
-    std::vector<char> mutableCommand(command.begin(), command.end());
-    mutableCommand.push_back('\0');
-
-    const std::string workingDirectory = projectRoot.string();
-
-    const BOOL created = CreateProcessA(
-        nullptr,
-        mutableCommand.data(),
-        nullptr,
-        nullptr,
-        TRUE,
-        CREATE_NO_WINDOW,
-        nullptr,
-        workingDirectory.c_str(),
-        &startupInfo,
-        &processInfo);
-
-    CloseHandle(writePipe);
-
-    if (!created) {
-        outcome.log = "CreateProcessA failed for latexmk.";
-        CloseHandle(readPipe);
-        return outcome;
-    }
-
-    WaitForSingleObject(processInfo.hProcess, INFINITE);
-
-    DWORD exitCode = 0;
-    GetExitCodeProcess(processInfo.hProcess, &exitCode);
-    outcome.exitCode = static_cast<int>(exitCode);
-
-    char buffer[4096];
-    DWORD bytesRead = 0;
-    while (ReadFile(readPipe, buffer, sizeof(buffer), &bytesRead, nullptr) && bytesRead > 0) {
-        outcome.log.append(buffer, buffer + bytesRead);
-    }
-
-    CloseHandle(readPipe);
-    CloseHandle(processInfo.hProcess);
-    CloseHandle(processInfo.hThread);
-
-    outcome.success = (outcome.exitCode == 0) && fs::exists(outcome.pdfPath);
-    if (outcome.log.empty()) {
-        outcome.log = outcome.success ? "latexmk finished successfully." : "latexmk failed.";
-    }
-
-    return outcome;
+int normalizedExitCode(int code) {
+    return code;
 }
 #else
-network::CollabServer::CompileOutcome runLatexmkWindows(const fs::path& projectRoot) {
-    network::CollabServer::CompileOutcome outcome;
-    outcome.pdfPath = projectRoot / "main.pdf";
-    outcome.log = "Windows-only CreateProcessA compilation path unavailable on this platform.";
-    return outcome;
+#include <sys/wait.h>
+int normalizedExitCode(int code) {
+    if (WIFEXITED(code)) {
+        return WEXITSTATUS(code);
+    }
+    return code;
 }
 #endif
+
+CollabServer::CompileOutcome runLatexmkCommand(const fs::path& projectRoot, const fs::path& mainTexPath) {
+    CollabServer::CompileOutcome outcome;
+    outcome.pdfPath = projectRoot / "main.pdf";
+
+    const std::string command = "cd \"" + projectRoot.string() +
+        "\" && latexmk -pdf -interaction=nonstopmode -halt-on-error -g main.tex 2>&1";
+
+    log(LogLevel::INFO, "latexmk start: " + command);
+
+#if defined(_WIN32)
+    FILE* pipe = _popen(command.c_str(), "r");
+#else
+    FILE* pipe = popen(command.c_str(), "r");
+#endif
+
+    if (!pipe) {
+        outcome.log = "Unable to launch latexmk process.";
+        return outcome;
+    }
+
+    std::array<char, 4096> buffer{};
+    while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe) != nullptr) {
+        outcome.log += buffer.data();
+    }
+
+#if defined(_WIN32)
+    const int rawExit = _pclose(pipe);
+#else
+    const int rawExit = pclose(pipe);
+#endif
+    outcome.exitCode = normalizedExitCode(rawExit);
+
+    std::error_code ecPdf;
+    const bool pdfExists = fs::exists(outcome.pdfPath, ecPdf) && !ecPdf;
+
+    std::error_code ecTex;
+    std::error_code ecPdfTime;
+    const auto texTime = fs::last_write_time(mainTexPath, ecTex);
+    const auto pdfTime = fs::last_write_time(outcome.pdfPath, ecPdfTime);
+    const bool timestampValid = pdfExists && !ecTex && !ecPdfTime && (pdfTime >= texTime);
+
+    if (outcome.exitCode == 0 && pdfExists && timestampValid) {
+        outcome.success = true;
+    } else if (outcome.exitCode != 0 && pdfExists && timestampValid) {
+        outcome.success = true;
+        log(LogLevel::WARN, "latexmk returned non-zero exit code but produced a valid PDF.");
+    } else {
+        outcome.success = false;
+    }
+
+    if (!pdfExists) {
+        outcome.log += "\nPDF output was not generated.";
+    } else if (!timestampValid) {
+        outcome.log += "\nPDF output is older than main.tex.";
+    }
+
+    log(LogLevel::INFO, "latexmk end");
+    log(LogLevel::INFO, "latexmk exit code: " + std::to_string(outcome.exitCode));
+
+    return outcome;
+}
 
 }  // namespace
 
@@ -173,6 +172,7 @@ CollabServer::CollabServer(fs::path projectRoot, std::uint16_t port)
       mainTexPath_(projectRoot_ / "main.tex"),
       mainPdfPath_(projectRoot_ / "main.pdf"),
       acceptor_(ioContext_, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)) {
+    setLogComponent(LogComponent::SERVER);
     ensureMainDocument();
     compileWorker_ = std::thread([this]() { compileWorkerLoop(); });
 }
@@ -202,10 +202,14 @@ void CollabServer::ensureMainDocument() {
     } catch (...) {
         mainDocument_.clear();
     }
+
+    if (mainDocument_.empty()) {
+        log(LogLevel::WARN, "main.tex is empty.");
+    }
 }
 
 void CollabServer::run() {
-    std::cout << "Collab server listening on port " << acceptor_.local_endpoint().port() << "\n";
+    log(LogLevel::INFO, "Collab server listening on port " + std::to_string(acceptor_.local_endpoint().port()));
     for (;;) {
         auto socket = std::make_shared<asio::ip::tcp::socket>(ioContext_);
         acceptor_.accept(*socket);
@@ -218,6 +222,8 @@ void CollabServer::run() {
             session->socket = socket;
             clients_[session->id] = session;
         }
+
+        log(LogLevel::INFO, "Client connected: #" + std::to_string(session->id));
 
         sendTo(session, protocol::Json{{"type", "sync"}, {"content", mainDocument_}});
         sendTo(session, makeFileListMessage());
@@ -288,14 +294,19 @@ void CollabServer::sendTo(std::shared_ptr<ClientSession> session, const protocol
     }
     std::string error;
     if (!protocol::writeFrameBlocking(*session->socket, message, error)) {
+        log(LogLevel::WARN, "Failed to send message to client #" + std::to_string(session->id) + ": " + error);
         removeClient(session->id);
     }
 }
 
 void CollabServer::removeClient(int id) {
+    bool existed = false;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        clients_.erase(id);
+        existed = clients_.erase(id) > 0;
+    }
+    if (existed) {
+        log(LogLevel::INFO, "Client disconnected: #" + std::to_string(id));
     }
     broadcast(makeUsersMessage());
 }
@@ -305,6 +316,9 @@ void CollabServer::handleClient(std::shared_ptr<ClientSession> session) {
         protocol::Json message;
         std::string error;
         if (!protocol::readFrameBlocking(*session->socket, message, error)) {
+            if (!error.empty()) {
+                log(LogLevel::WARN, "Read loop ended for client #" + std::to_string(session->id) + ": " + error);
+            }
             break;
         }
         handleMessage(session, message);
@@ -320,16 +334,18 @@ void CollabServer::updateMainDocument(const std::string& content) {
 
     std::string writeError;
     if (!compiler::writeFile(mainTexPath_, content, writeError)) {
-        std::cerr << "Failed to update main.tex: " << writeError << "\n";
+        log(LogLevel::ERROR, "Failed to update main.tex: " + writeError);
     }
 }
 
-void CollabServer::enqueueCompile() {
-    {
-        std::lock_guard<std::mutex> lock(compileMutex_);
-        ++pendingCompileRequests_;
+bool CollabServer::tryEnqueueCompile() {
+    std::lock_guard<std::mutex> lock(compileMutex_);
+    if (compileRunning_ || pendingCompileRequests_ > 0) {
+        return false;
     }
+    ++pendingCompileRequests_;
     compileCv_.notify_one();
+    return true;
 }
 
 void CollabServer::compileWorkerLoop() {
@@ -341,51 +357,67 @@ void CollabServer::compileWorkerLoop() {
                 return;
             }
             --pendingCompileRequests_;
+            compileRunning_ = true;
         }
 
         const CompileOutcome outcome = runLatexmk();
         broadcastCompileOutcome(outcome);
+
+        {
+            std::lock_guard<std::mutex> lock(compileMutex_);
+            compileRunning_ = false;
+        }
     }
 }
 
 CollabServer::CompileOutcome CollabServer::runLatexmk() {
-    return runLatexmkWindows(projectRoot_);
+    return runLatexmkCommand(projectRoot_, mainTexPath_);
 }
 
 void CollabServer::broadcastCompileOutcome(const CompileOutcome& outcome) {
     if (!outcome.success) {
+        log(LogLevel::ERROR, "Compilation failed.");
         broadcast(protocol::Json{{"type", "compile_result"}, {"success", false}, {"log", outcome.log}});
         return;
     }
 
     std::ifstream pdfFile(outcome.pdfPath, std::ios::binary);
     if (!pdfFile) {
-        broadcast(protocol::Json{{"type", "compile_result"}, {"success", false}, {"log", "Compilation succeeded but main.pdf could not be opened."}});
+        const std::string error = "Compilation succeeded but main.pdf could not be opened.";
+        log(LogLevel::ERROR, error);
+        broadcast(protocol::Json{{"type", "compile_result"}, {"success", false}, {"log", error}});
         return;
     }
 
     std::vector<std::uint8_t> bytes((std::istreambuf_iterator<char>(pdfFile)), std::istreambuf_iterator<char>());
 
-    broadcast(protocol::Json{{"type", "compile_result"}, {"success", true}, {"pdf_size", bytes.size()}});
-
     constexpr std::size_t kChunkSize = 32 * 1024;
+    const std::size_t chunkCount = bytes.empty() ? 1 : ((bytes.size() + kChunkSize - 1) / kChunkSize);
+
+    broadcast(protocol::Json{{"type", "compile_result"}, {"success", true}, {"pdf_size", bytes.size()}, {"chunk_count", chunkCount}});
+
+    std::size_t chunkIndex = 0;
     for (std::size_t offset = 0; offset < bytes.size(); offset += kChunkSize) {
         const std::size_t end = std::min(bytes.size(), offset + kChunkSize);
         const std::vector<std::uint8_t> chunk(
             bytes.begin() + static_cast<std::ptrdiff_t>(offset),
             bytes.begin() + static_cast<std::ptrdiff_t>(end));
         const bool last = (end == bytes.size());
-        broadcast(protocol::Json{{"type", "pdf_chunk"}, {"data", base64Encode(chunk)}, {"last", last}});
+        broadcast(protocol::Json{{"type", "pdf_chunk"}, {"data", base64Encode(chunk)}, {"last", last}, {"index", chunkIndex}, {"total", chunkCount}});
+        ++chunkIndex;
     }
 
     if (bytes.empty()) {
-        broadcast(protocol::Json{{"type", "pdf_chunk"}, {"data", ""}, {"last", true}});
+        broadcast(protocol::Json{{"type", "pdf_chunk"}, {"data", ""}, {"last", true}, {"index", 0}, {"total", chunkCount}});
     }
+
+    log(LogLevel::INFO, "PDF streaming complete. Chunks sent: " + std::to_string(chunkCount));
 }
 
 void CollabServer::handleMessage(std::shared_ptr<ClientSession> session, const protocol::Json& message) {
     const std::string type = message.value("type", "");
     if (type == "sync") {
+        log(LogLevel::INFO, "Sync received from client #" + std::to_string(session->id));
         const std::string content = message.value("content", "");
         updateMainDocument(content);
         broadcast(protocol::Json{{"type", "sync"}, {"content", content}});
@@ -393,7 +425,10 @@ void CollabServer::handleMessage(std::shared_ptr<ClientSession> session, const p
     }
 
     if (type == "compile_request") {
-        enqueueCompile();
+        log(LogLevel::INFO, "Compile request received from client #" + std::to_string(session->id));
+        if (!tryEnqueueCompile()) {
+            sendTo(session, protocol::Json{{"type", "compile_result"}, {"success", false}, {"log", "Compile already in progress. Please retry."}});
+        }
         return;
     }
 
