@@ -148,13 +148,8 @@ void initialize(AppState& state, EditorModule& module, ImGuiIO& io) {
     module.textEditor->SetTabSize(module.preferences.tabSize);
     module.initialized = true;
 
-    if (!state.texPath.empty()) {
-        std::string error;
-        loadDocument(state, module, state.texPath, error);
-        if (!error.empty()) {
-            state.status = error;
-        }
-    }
+    module.textEditor->SetText("");
+    state.editorDirty = false;
 }
 
 void shutdown(EditorModule& module) {
@@ -171,13 +166,9 @@ bool loadDocument(AppState& state, EditorModule& module, const fs::path& path, s
             return false;
         }
         module.textEditor->SetText(content);
-        state.texPath = absolutePath;
         state.editorDirty = false;
         state.status = "Loaded: " + absolutePath.string();
-        if (state.collab.connected && state.collab.client) {
-            std::string sendError;
-            state.collab.client->send({{"type", "file_open"}, {"path", absolutePath.lexically_relative(state.projectRoot).generic_string()}}, sendError);
-        }
+        state.collab.lastSyncedContent = content;
         return true;
     } catch (const std::exception& ex) {
         error = std::string("Failed to load file: ") + ex.what();
@@ -191,21 +182,21 @@ bool saveDocument(AppState& state, const EditorModule& module, std::string& erro
         return false;
     }
 
-    if (state.texPath.empty()) {
-        error = "No .tex file is selected.";
+    if (!state.collab.connected || !state.collab.client) {
+        error = "Not connected to collaboration server.";
         return false;
     }
 
-    const bool written = compiler::writeFile(state.texPath, module.textEditor->GetText(), error);
-    if (written) {
-        state.editorDirty = false;
-        state.status = "Saved: " + state.texPath.string();
-        if (state.collab.connected && state.collab.client) {
-            std::string sendError;
-            state.collab.client->send({{"type", "file_save"}, {"path", state.texPath.lexically_relative(state.projectRoot).generic_string()}, {"content", module.textEditor->GetText()}}, sendError);
-        }
+    std::string sendError;
+    if (!state.collab.client->send({{"type", "sync"}, {"content", module.textEditor->GetText()}}, sendError)) {
+        error = "Failed to send sync: " + sendError;
+        return false;
     }
-    return written;
+
+    state.collab.lastSyncedContent = module.textEditor->GetText();
+    state.editorDirty = false;
+    state.status = "Synchronized with server main.tex.";
+    return true;
 }
 
 void renderEditor(AppState& state, EditorModule& module, const ImVec2& size) {

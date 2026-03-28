@@ -4,6 +4,13 @@ project(LatexServerNoPreview VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
+endif()
 
 include(FetchContent)
 
@@ -84,7 +91,6 @@ add_executable(latex_server
     src/main.cpp
     src/compiler.cpp
     src/editor.cpp
-    src/file_tree.cpp
     src/ui.cpp
     src/core/editor_sync.cpp
     src/core/file_sync.cpp

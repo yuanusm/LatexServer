@@ -1,48 +1,19 @@
 #include "ui.h"
 
-#include "compiler.h"
-#include "file_tree.h"
 #include "network/client.hpp"
-#include "network/protocol.hpp"
 
 #include <imgui.h>
 
-#include <array>
 #include <cstdint>
 #include <cstdio>
-#include <filesystem>
-#include <string>
-
-namespace fs = std::filesystem;
 
 namespace ui {
 namespace {
 
-std::string currentDocumentLabel(const AppState& state) {
-    return state.texPath.empty() ? std::string{"No file loaded"} : state.texPath.filename().string();
-}
-
 void renderToolbar(AppState& state) {
-    if (ImGui::Button("Open")) {
-        state.showOpenDialog = true;
-        if (state.openPathBuffer.empty()) {
-            state.openPathBuffer = state.texPath.empty() ? std::string{} : state.texPath.string();
-        }
-        ImGui::OpenPopup("OpenLaTeXFile");
-    }
-
-    ImGui::SameLine();
-    if (ImGui::Button("Save")) {
-        state.saveRequested = true;
-    }
-
-    ImGui::SameLine();
     if (ImGui::Button("Compile")) {
         state.compileRequested = true;
     }
-
-    ImGui::SameLine();
-    ImGui::Checkbox("Auto", &state.autoMode);
 
     ImGui::SameLine();
     if (ImGui::Button("Preferences")) {
@@ -55,7 +26,6 @@ void renderToolbar(AppState& state) {
         if (state.collab.client && state.collab.client->connect(state.collab.host, static_cast<std::uint16_t>(state.collab.port), error)) {
             state.collab.connected = true;
             state.status = "Connected to collaboration server.";
-            state.collab.client->send({{"type", "file_list"}}, error);
         } else {
             state.status = "Connection failed: " + error;
             state.collab.connected = false;
@@ -89,48 +59,6 @@ void renderToolbar(AppState& state) {
     if (state.collab.port > 65535) {
         state.collab.port = 65535;
     }
-
-    ImGui::SameLine();
-    ImGui::TextDisabled("|");
-    ImGui::SameLine();
-    ImGui::TextUnformatted(currentDocumentLabel(state).c_str());
-    ImGui::SameLine();
-    ImGui::TextDisabled(state.editorDirty ? "• modified" : "• saved");
-}
-
-bool renderOpenDialog(AppState& state, editor::EditorModule& editorModule) {
-    bool loaded = false;
-    if (state.showOpenDialog) {
-        ImGui::OpenPopup("OpenLaTeXFile");
-        state.showOpenDialog = false;
-    }
-
-    if (ImGui::BeginPopupModal("OpenLaTeXFile", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextWrapped("Enter the absolute or project-relative path to a .tex file.");
-        char pathBuffer[1024] = {};
-        std::snprintf(pathBuffer, sizeof(pathBuffer), "%s", state.openPathBuffer.c_str());
-        if (ImGui::InputText("Path", pathBuffer, sizeof(pathBuffer))) {
-            state.openPathBuffer = pathBuffer;
-        }
-
-        if (ImGui::Button("Load")) {
-            fs::path candidate;
-            std::string error;
-            if (file_tree::resolveProjectPath(state.projectRoot, state.openPathBuffer, candidate, error) &&
-                editor::loadDocument(state, editorModule, candidate, error)) {
-                loaded = true;
-                ImGui::CloseCurrentPopup();
-            } else {
-                state.status = error;
-            }
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel")) {
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-    }
-    return loaded;
 }
 
 bool renderPreferences(AppState& state, editor::EditorModule& editorModule) {
@@ -184,7 +112,7 @@ bool renderPreferences(AppState& state, editor::EditorModule& editorModule) {
 
 }  // namespace
 
-void renderMainWindow(AppState& state, editor::EditorModule& editorModule, file_tree::FileTreeModule& fileTreeModule) {
+void renderMainWindow(AppState& state, editor::EditorModule& editorModule) {
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize, ImGuiCond_Always);
 
@@ -196,7 +124,6 @@ void renderMainWindow(AppState& state, editor::EditorModule& editorModule, file_
     ImGui::Begin("Main Window", nullptr, windowFlags);
 
     renderToolbar(state);
-    const bool reloaded = renderOpenDialog(state, editorModule);
     const bool fontChanged = renderPreferences(state, editorModule);
     if (fontChanged) {
         state.fontDirty = true;
@@ -204,18 +131,15 @@ void renderMainWindow(AppState& state, editor::EditorModule& editorModule, file_
 
     ImGui::Separator();
     ImGui::TextWrapped("Status: %s", state.status.c_str());
-    if (!state.lastCommand.empty()) {
-        ImGui::TextWrapped("latexmk: %s", state.lastCommand.c_str());
-    }
-    ImGui::TextUnformatted(state.compileInProgress ? "Compilation: running" : (state.lastCompileSuccess ? "Compilation: last run succeeded" : "Compilation: idle or last run failed"));
+    ImGui::TextUnformatted(state.compileInProgress ? "Compilation: waiting for server" : (state.lastCompileSuccess ? "Compilation: last run succeeded" : "Compilation: idle or last run failed"));
+    ImGui::TextWrapped("Server main.tex: %s", state.serverMainTexPath.string().c_str());
+    ImGui::TextWrapped("PDF output: %s", state.receivedPdfPath.string().c_str());
 
     ImGui::Separator();
     const ImVec2 contentSize = ImGui::GetContentRegionAvail();
-    const float treeWidth = contentSize.x * 0.28f;
+    const float usersWidth = contentSize.x * 0.28f;
 
-    const float usersHeight = 170.0f;
-    file_tree::renderPanel(state, editorModule, fileTreeModule, ImVec2(treeWidth, contentSize.y - usersHeight - 8.0f));
-    ImGui::BeginChild("UsersPanel", ImVec2(treeWidth, usersHeight), true);
+    ImGui::BeginChild("UsersPanel", ImVec2(usersWidth, contentSize.y), true);
     ImGui::TextUnformatted("Users");
     ImGui::Separator();
     for (const auto& user : state.collab.users) {
@@ -230,10 +154,6 @@ void renderMainWindow(AppState& state, editor::EditorModule& editorModule, file_
     ImGui::BeginChild("EditorHostPanel", ImVec2(0.0f, contentSize.y), true);
     editor::renderEditor(state, editorModule, ImGui::GetContentRegionAvail());
     ImGui::EndChild();
-
-    if (reloaded) {
-        state.lastCompileSuccess = false;
-    }
 
     ImGui::End();
 }

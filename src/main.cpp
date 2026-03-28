@@ -1,7 +1,5 @@
 #include "app_state.h"
-#include "compiler.h"
 #include "editor.h"
-#include "file_tree.h"
 #include "ui.h"
 
 #include "TextEditor.h"
@@ -14,86 +12,83 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
-#include <chrono>
+#include <algorithm>
+#include <array>
+#include <cstdint>
 #include <filesystem>
-#include <future>
+#include <fstream>
 #include <iostream>
-#include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace fs = std::filesystem;
 
 namespace {
 
-bool saveEditor(AppState& state, const editor::EditorModule& editorModule) {
-    std::string error;
-    if (!editor::saveDocument(state, editorModule, error)) {
-        state.status = error;
-        state.lastCompileSuccess = false;
-        return false;
-    }
-    return true;
+int decodeBase64Char(unsigned char ch) {
+    if (ch >= 'A' && ch <= 'Z') return ch - 'A';
+    if (ch >= 'a' && ch <= 'z') return ch - 'a' + 26;
+    if (ch >= '0' && ch <= '9') return ch - '0' + 52;
+    if (ch == '+') return 62;
+    if (ch == '/') return 63;
+    return -1;
 }
 
-void startCompile(AppState& state, const editor::EditorModule& editorModule) {
-    if (state.compileInProgress) {
+std::vector<std::uint8_t> base64Decode(const std::string& input) {
+    std::vector<std::uint8_t> output;
+    output.reserve((input.size() / 4) * 3);
+
+    std::array<int, 4> block{};
+    std::size_t index = 0;
+
+    for (unsigned char ch : input) {
+        if (ch == '=') {
+            block[index++] = -2;
+        } else {
+            const int value = decodeBase64Char(ch);
+            if (value < 0) {
+                continue;
+            }
+            block[index++] = value;
+        }
+
+        if (index == 4) {
+            const int b0 = block[0];
+            const int b1 = block[1];
+            const int b2 = block[2];
+            const int b3 = block[3];
+
+            if (b0 >= 0 && b1 >= 0) {
+                output.push_back(static_cast<std::uint8_t>((b0 << 2) | (b1 >> 4)));
+            }
+            if (b2 >= 0 && b0 >= 0 && b1 >= 0) {
+                output.push_back(static_cast<std::uint8_t>(((b1 & 0x0F) << 4) | (b2 >> 2)));
+            }
+            if (b3 >= 0 && b2 >= 0) {
+                output.push_back(static_cast<std::uint8_t>(((b2 & 0x03) << 6) | b3));
+            }
+            index = 0;
+        }
+    }
+
+    return output;
+}
+
+void requestServerCompile(AppState& state) {
+    if (!state.compileRequested || !state.collab.connected || !state.collab.client) {
         return;
     }
 
-    if (!saveEditor(state, editorModule)) {
-        return;
-    }
-
-    state.compileInProgress = true;
     state.compileRequested = false;
-    state.status = "Compiling with latexmk...";
-
-    const CompileRequest request{state.texPath, state.buildDir, state.logPath};
-    state.compileFuture = std::async(std::launch::async, [request]() {
-        return compiler::compilePdf(request);
-    });
-}
-
-void pollCompile(AppState& state) {
-    if (!state.compileInProgress) {
-        return;
-    }
-
-    if (state.compileFuture.wait_for(std::chrono::milliseconds(0)) != std::future_status::ready) {
-        return;
-    }
-
-    const CompileResult result = state.compileFuture.get();
-    state.compileInProgress = false;
-    state.lastCommand = result.command;
-    state.lastCompileSuccess = result.success;
-    state.status = result.message;
-    if (result.success) {
-        state.lastPdfPath = result.pdfPath;
+    state.compileInProgress = true;
+    state.lastCompileSuccess = false;
+    state.status = "Compile request sent to server...";
+    std::string error;
+    if (!state.collab.client->send({{"type", "compile_request"}}, error)) {
+        state.compileInProgress = false;
+        state.status = "Compile request failed: " + error;
     }
 }
-
-void processAutoCompile(AppState& state, const editor::EditorModule& editorModule) {
-    if (!state.autoMode || state.compileInProgress || !state.editorDirty) {
-        return;
-    }
-
-    const auto now = std::chrono::steady_clock::now();
-    if (now - state.lastEditAt < std::chrono::milliseconds(700)) {
-        return;
-    }
-
-    startCompile(state, editorModule);
-}
-
-void processSaveRequest(AppState& state, const editor::EditorModule& editorModule) {
-    if (!state.saveRequested) {
-        return;
-    }
-    state.saveRequested = false;
-    saveEditor(state, editorModule);
-}
-
 
 void pollCollaboration(AppState& state, editor::EditorModule& editorModule) {
     if (!state.collab.client || !state.collab.connected) {
@@ -109,10 +104,48 @@ void pollCollaboration(AppState& state, editor::EditorModule& editorModule) {
                     state.collab.suppressOutgoingSync = true;
                     editorModule.textEditor->SetText(content);
                     state.collab.suppressOutgoingSync = false;
-                    state.collab.lastSyncedContent = content;
-                    state.editorDirty = true;
-                    state.status = "Document synchronized from server.";
                 }
+                state.collab.lastSyncedContent = content;
+                state.editorDirty = false;
+                state.status = "Document synchronized from server main.tex.";
+            }
+            continue;
+        }
+
+        if (type == "compile_result") {
+            state.compileInProgress = false;
+            const bool success = message.value("success", false);
+            state.lastCompileSuccess = success;
+            if (success) {
+                state.incomingPdfBase64.clear();
+                state.status = "Server compilation succeeded. Receiving PDF...";
+            } else {
+                state.lastCompileLog = message.value("log", "Server compilation failed.");
+                state.status = state.lastCompileLog;
+            }
+            continue;
+        }
+
+        if (type == "pdf_chunk") {
+            const std::string data = message.value("data", "");
+            state.incomingPdfBase64 += data;
+            const bool last = message.value("last", false);
+            if (last) {
+                const std::vector<std::uint8_t> bytes = base64Decode(state.incomingPdfBase64);
+                std::error_code ec;
+                fs::create_directories(state.receivedPdfPath.parent_path(), ec);
+                std::ofstream out(state.receivedPdfPath, std::ios::binary | std::ios::trunc);
+                if (!out) {
+                    state.status = "Failed to store PDF locally: " + state.receivedPdfPath.string();
+                } else {
+                    out.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+                    if (out) {
+                        state.status = "PDF received from server: " + state.receivedPdfPath.string();
+                    } else {
+                        state.status = "Failed while writing PDF to: " + state.receivedPdfPath.string();
+                    }
+                }
+                state.incomingPdfBase64.clear();
             }
             continue;
         }
@@ -152,11 +185,7 @@ void rebuildFontsIfNeeded(AppState& state, editor::EditorModule& editorModule, I
 
 }  // namespace
 
-int main(int argc, char** argv) {
-    const fs::path argv0 = argc > 0 ? fs::path(argv[0]) : fs::current_path();
-    const fs::path projectRoot = compiler::detectProjectRoot(argv0);
-    fs::current_path(projectRoot);
-
+int main() {
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW.\n";
         return EXIT_FAILURE;
@@ -185,26 +214,20 @@ int main(int argc, char** argv) {
 
     AppState state;
     state.collab.client = std::make_unique<network::CollabClient>();
-    state.projectRoot = projectRoot;
-    state.texPath = fs::absolute(projectRoot / "assets/sample.tex");
-    state.buildDir = fs::absolute(projectRoot / "build-output");
-    state.logPath = state.buildDir / "latexmk.log";
-    state.openPathBuffer = state.texPath.string();
-    state.status = "Ready. Open a .tex file, edit it, then save or compile.";
+    state.projectRoot = fs::current_path();
+    state.serverMainTexPath = "main.tex";
+    state.receivedPdfPath = state.projectRoot / "client_temp" / "main.pdf";
+    state.status = "Ready. Connect to server, edit main.tex, and request compile.";
 
     editor::EditorModule editorModule;
-    file_tree::FileTreeModule fileTreeModule;
-    file_tree::initialize(fileTreeModule, state.projectRoot);
     editor::initialize(state, editorModule, io);
     rebuildFontsIfNeeded(state, editorModule, io);
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        pollCompile(state);
-        processSaveRequest(state, editorModule);
-        processAutoCompile(state, editorModule);
         core::editor_sync::processOutgoingSync(state, editorModule);
+        requestServerCompile(state);
         pollCollaboration(state, editorModule);
         rebuildFontsIfNeeded(state, editorModule, io);
 
@@ -212,10 +235,7 @@ int main(int argc, char** argv) {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ui::renderMainWindow(state, editorModule, fileTreeModule);
-        if (state.compileRequested) {
-            startCompile(state, editorModule);
-        }
+        ui::renderMainWindow(state, editorModule);
 
         ImGui::Render();
 
@@ -228,10 +248,6 @@ int main(int argc, char** argv) {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
-    }
-
-    if (state.compileInProgress) {
-        state.compileFuture.wait();
     }
 
     editor::shutdown(editorModule);

@@ -2,7 +2,6 @@
 
 #include <chrono>
 #include <filesystem>
-#include <future>
 #include <memory>
 #include <string>
 #include <vector>
@@ -12,21 +11,6 @@ namespace fs = std::filesystem;
 namespace network {
 class CollabClient;
 }
-
-struct CompileRequest {
-    fs::path texPath;
-    fs::path buildDir;
-    fs::path logPath;
-};
-
-struct CompileResult {
-    bool success = false;
-    fs::path pdfPath;
-    fs::path logPath;
-    int exitCode = -1;
-    std::string command;
-    std::string message;
-};
 
 struct AppState {
     struct UserInfo {
@@ -49,27 +33,22 @@ struct AppState {
     };
 
     fs::path projectRoot;
-    fs::path texPath;
-    fs::path buildDir;
-    fs::path logPath;
-    fs::path lastPdfPath;
+    fs::path serverMainTexPath;
+    fs::path receivedPdfPath;
 
     bool editorDirty = false;
-    bool autoMode = false;
-    bool saveRequested = false;
     bool compileRequested = false;
     bool compileInProgress = false;
     bool showPreferences = false;
-    bool showOpenDialog = false;
     bool fontDirty = false;
 
     std::chrono::steady_clock::time_point lastEditAt = std::chrono::steady_clock::now();
-    std::future<CompileResult> compileFuture;
 
     std::string status = "Ready.";
-    std::string lastCommand;
-    std::string openPathBuffer;
+    std::string lastCompileLog;
     bool lastCompileSuccess = false;
+
+    std::string incomingPdfBase64;
 
     CollaborationState collab;
 };
