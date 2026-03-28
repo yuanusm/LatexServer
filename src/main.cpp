@@ -270,7 +270,9 @@ int main() {
 
     AppState state;
     state.collab.client = std::make_unique<network::CollabClient>();
-    state.projectRoot = fs::current_path();
+    state.projectRoot = fs::path("server_project");
+    std::error_code ec;
+    fs::create_directories(state.projectRoot, ec);
     state.serverMainTexPath = "main.tex";
     state.receivedPdfPath = state.projectRoot / "client_temp" / "main.pdf";
     state.status = "Ready. Connect to server, edit main.tex, and request compile.";

@@ -252,7 +252,7 @@ void renderFileTreePanel(AppState& state, editor::EditorModule& editorModule, co
     ImGui::Separator();
 
     static char uploadSource[512] = "";
-    static char uploadDestination[512] = "assets/image.png";
+    static char uploadDestination[512] = "images/upload.png";
 
     ImGui::InputText("Source", uploadSource, sizeof(uploadSource));
     ImGui::InputText("Target", uploadDestination, sizeof(uploadDestination));

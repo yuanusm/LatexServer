@@ -5,6 +5,7 @@
 #include "file_tree.h"
 
 #include <filesystem>
+#include <set>
 
 namespace fs = std::filesystem;
 
@@ -73,9 +74,13 @@ void applyServerMessage(AppState& state, const network::protocol::Json& message)
     if (type == "file_list") {
         state.collab.remoteFiles.clear();
         state.collab.remoteFileEntries.clear();
+        std::set<std::string> seen;
         if (message.contains("files") && message["files"].is_array()) {
             for (const auto& item : message["files"]) {
-                state.collab.remoteFiles.push_back(item.get<std::string>());
+                const std::string path = item.get<std::string>();
+                if (seen.insert("f:" + path).second) {
+                    state.collab.remoteFiles.push_back(path);
+                }
             }
         }
         if (message.contains("entries") && message["entries"].is_array()) {
@@ -84,7 +89,9 @@ void applyServerMessage(AppState& state, const network::protocol::Json& message)
                 entry.path = item.value("path", "");
                 entry.isDirectory = item.value("is_directory", false);
                 entry.size = item.value("size", static_cast<std::size_t>(0));
-                state.collab.remoteFileEntries.push_back(std::move(entry));
+                if (seen.insert("e:" + entry.path).second) {
+                    state.collab.remoteFileEntries.push_back(std::move(entry));
+                }
             }
         }
     }
