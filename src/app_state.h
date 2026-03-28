@@ -3,6 +3,7 @@
 #include <chrono>
 #include <filesystem>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -32,6 +33,12 @@ struct AppState {
     };
 
     struct CollaborationState {
+        struct FileEntry {
+            std::string path;
+            bool isDirectory = false;
+            std::size_t size = 0;
+        };
+
         std::string host = "127.0.0.1";
         int port = 9090;
         bool connected = false;
@@ -40,6 +47,7 @@ struct AppState {
         std::unique_ptr<network::CollabClient> client;
         std::vector<UserInfo> users;
         std::vector<std::string> remoteFiles;
+        std::vector<FileEntry> remoteFileEntries;
         std::string lastSyncedContent;
         std::string lastOpenedRemotePath;
         std::chrono::steady_clock::time_point lastSyncSentAt = std::chrono::steady_clock::now();
@@ -53,6 +61,9 @@ struct AppState {
     bool compileRequested = false;
     bool compileInProgress = false;
     bool showPreferences = false;
+    bool showLogs = true;
+    bool showUsersPopup = false;
+    bool autoCompile = false;
     bool fontDirty = false;
 
     std::chrono::steady_clock::time_point lastEditAt = std::chrono::steady_clock::now();
@@ -60,6 +71,7 @@ struct AppState {
     std::string status = "Ready.";
     std::string lastCompileLog;
     bool lastCompileSuccess = false;
+    std::vector<std::string> logs;
 
     std::string incomingPdfBase64;
     std::size_t expectedPdfChunks = 0;

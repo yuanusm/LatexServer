@@ -125,6 +125,10 @@ void pollCollaboration(AppState& state, editor::EditorModule& editorModule) {
             state.compileInProgress = false;
             const bool success = message.value("success", false);
             state.lastCompileSuccess = success;
+            const std::string compileLog = message.value("log", "");
+            if (!compileLog.empty()) {
+                state.logs.push_back(compileLog);
+            }
             if (success) {
                 state.incomingPdfBase64.clear();
                 state.expectedPdfChunks = message.value("chunk_count", 0U);
@@ -136,6 +140,19 @@ void pollCollaboration(AppState& state, editor::EditorModule& editorModule) {
                 state.lastCompileLog = message.value("log", "Server compilation failed.");
                 state.clientState = AppState::ClientState::ERROR;
                 state.status = state.lastCompileLog;
+            }
+            continue;
+        }
+
+        if (type == "file_open") {
+            if (editorModule.textEditor) {
+                const std::string content = message.value("content", "");
+                state.collab.suppressOutgoingSync = true;
+                editorModule.textEditor->SetText(content);
+                state.collab.suppressOutgoingSync = false;
+                state.collab.lastSyncedContent = content;
+                state.serverMainTexPath = message.value("path", "main.tex");
+                state.status = "Opened remote file: " + state.serverMainTexPath.string();
             }
             continue;
         }
@@ -267,6 +284,9 @@ int main() {
         glfwPollEvents();
 
         core::editor_sync::processOutgoingSync(state, editorModule);
+        if (state.autoCompile && state.collab.connected && state.editorDirty && !state.compileInProgress) {
+            state.compileRequested = true;
+        }
         requestServerCompile(state);
         pollCollaboration(state, editorModule);
         rebuildFontsIfNeeded(state, editorModule, io);

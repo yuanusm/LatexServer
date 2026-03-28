@@ -49,6 +49,75 @@ std::vector<std::string> listFilesRecursive(const fs::path& root) {
     return files;
 }
 
+struct FileEntry {
+    std::string path;
+    bool isDirectory = false;
+    std::size_t size = 0;
+};
+
+bool isAllowedExtension(const fs::path& path) {
+    static const std::vector<std::string> allowed{".tex", ".png", ".jpg", ".jpeg", ".pdf"};
+    const std::string ext = path.extension().string();
+    return std::find(allowed.begin(), allowed.end(), ext) != allowed.end();
+}
+
+std::vector<FileEntry> listEntriesRecursive(const fs::path& root) {
+    std::vector<FileEntry> entries;
+    std::error_code ec;
+    for (fs::recursive_directory_iterator it(root, ec), end; it != end && !ec; it.increment(ec)) {
+        FileEntry entry;
+        entry.path = it->path().lexically_relative(root).generic_string();
+        entry.isDirectory = it->is_directory(ec);
+        if (!entry.isDirectory && it->is_regular_file(ec)) {
+            if (!isAllowedExtension(it->path())) {
+                continue;
+            }
+            entry.size = static_cast<std::size_t>(it->file_size(ec));
+        }
+        entries.push_back(std::move(entry));
+    }
+    std::sort(entries.begin(), entries.end(), [](const FileEntry& a, const FileEntry& b) { return a.path < b.path; });
+    return entries;
+}
+
+std::vector<std::uint8_t> base64Decode(const std::string& input) {
+    auto decodeBase64Char = [](unsigned char ch) -> int {
+        if (ch >= 'A' && ch <= 'Z') return ch - 'A';
+        if (ch >= 'a' && ch <= 'z') return ch - 'a' + 26;
+        if (ch >= '0' && ch <= '9') return ch - '0' + 52;
+        if (ch == '+') return 62;
+        if (ch == '/') return 63;
+        return -1;
+    };
+
+    std::vector<std::uint8_t> output;
+    output.reserve((input.size() / 4) * 3);
+    std::array<int, 4> block{};
+    std::size_t index = 0;
+    for (unsigned char ch : input) {
+        if (ch == '=') {
+            block[index++] = -2;
+        } else {
+            const int value = decodeBase64Char(ch);
+            if (value < 0) {
+                continue;
+            }
+            block[index++] = value;
+        }
+        if (index == 4) {
+            const int b0 = block[0];
+            const int b1 = block[1];
+            const int b2 = block[2];
+            const int b3 = block[3];
+            if (b0 >= 0 && b1 >= 0) output.push_back(static_cast<std::uint8_t>((b0 << 2) | (b1 >> 4)));
+            if (b2 >= 0 && b0 >= 0 && b1 >= 0) output.push_back(static_cast<std::uint8_t>(((b1 & 0x0F) << 4) | (b2 >> 2)));
+            if (b3 >= 0 && b2 >= 0) output.push_back(static_cast<std::uint8_t>(((b2 & 0x03) << 6) | b3));
+            index = 0;
+        }
+    }
+    return output;
+}
+
 std::string base64Encode(const std::vector<std::uint8_t>& bytes) {
     static constexpr char kAlphabet[] =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -271,7 +340,12 @@ protocol::Json CollabServer::makeUsersMessage() const {
 
 protocol::Json CollabServer::makeFileListMessage() const {
     const auto files = listFilesRecursive(projectRoot_);
-    return protocol::Json{{"type", "file_list"}, {"files", files}};
+    const auto entries = listEntriesRecursive(projectRoot_);
+    protocol::Json entriesJson = protocol::Json::array();
+    for (const auto& entry : entries) {
+        entriesJson.push_back({{"path", entry.path}, {"is_directory", entry.isDirectory}, {"size", entry.size}});
+    }
+    return protocol::Json{{"type", "file_list"}, {"files", files}, {"entries", entriesJson}};
 }
 
 void CollabServer::broadcast(const protocol::Json& message) {
@@ -391,14 +465,16 @@ void CollabServer::broadcastCompileOutcome(const CompileOutcome& outcome) {
 
     std::vector<std::uint8_t> bytes((std::istreambuf_iterator<char>(pdfFile)), std::istreambuf_iterator<char>());
 
-    constexpr std::size_t kChunkSize = 32 * 1024;
-    const std::size_t chunkCount = bytes.empty() ? 1 : ((bytes.size() + kChunkSize - 1) / kChunkSize);
+    constexpr std::size_t kChunkSize = 64 * 1024;
+    constexpr std::size_t kSingleMessageThreshold = 5 * 1024 * 1024;
+    const std::size_t effectiveChunkSize = bytes.size() < kSingleMessageThreshold ? bytes.size() + 1 : kChunkSize;
+    const std::size_t chunkCount = bytes.empty() ? 1 : ((bytes.size() + effectiveChunkSize - 1) / effectiveChunkSize);
 
-    broadcast(protocol::Json{{"type", "compile_result"}, {"success", true}, {"pdf_size", bytes.size()}, {"chunk_count", chunkCount}});
+    broadcast(protocol::Json{{"type", "compile_result"}, {"success", true}, {"pdf_size", bytes.size()}, {"chunk_count", chunkCount}, {"log", outcome.log}});
 
     std::size_t chunkIndex = 0;
-    for (std::size_t offset = 0; offset < bytes.size(); offset += kChunkSize) {
-        const std::size_t end = std::min(bytes.size(), offset + kChunkSize);
+    for (std::size_t offset = 0; offset < bytes.size(); offset += effectiveChunkSize) {
+        const std::size_t end = std::min(bytes.size(), offset + effectiveChunkSize);
         const std::vector<std::uint8_t> chunk(
             bytes.begin() + static_cast<std::ptrdiff_t>(offset),
             bytes.begin() + static_cast<std::ptrdiff_t>(end));
@@ -432,7 +508,7 @@ void CollabServer::handleMessage(std::shared_ptr<ClientSession> session, const p
         return;
     }
 
-    if (type == "file_list") {
+    if (type == "file_list" || type == "file_list_request") {
         sendTo(session, makeFileListMessage());
         return;
     }
@@ -443,6 +519,9 @@ void CollabServer::handleMessage(std::shared_ptr<ClientSession> session, const p
 
     if (type == "file_open") {
         if (!resolveInsideRoot(pathText, resolved, error)) {
+            return;
+        }
+        if (!isAllowedExtension(resolved)) {
             return;
         }
         try {
@@ -457,6 +536,9 @@ void CollabServer::handleMessage(std::shared_ptr<ClientSession> session, const p
         if (!resolveInsideRoot(pathText, resolved, error)) {
             return;
         }
+        if (!isAllowedExtension(resolved)) {
+            return;
+        }
         std::string writeError;
         if (compiler::writeFile(resolved, message.value("content", ""), writeError)) {
             broadcast(protocol::Json{{"type", "file_save"}, {"path", fs::relative(resolved, projectRoot_).generic_string()}, {"content", message.value("content", "")}});
@@ -467,6 +549,9 @@ void CollabServer::handleMessage(std::shared_ptr<ClientSession> session, const p
 
     if (type == "file_create") {
         if (!resolveInsideRoot(pathText, resolved, error)) {
+            return;
+        }
+        if (!isAllowedExtension(resolved)) {
             return;
         }
         std::string writeError;
@@ -510,8 +595,16 @@ void CollabServer::handleMessage(std::shared_ptr<ClientSession> session, const p
         if (!resolveInsideRoot(pathText, resolved, error)) {
             return;
         }
+        if (!isAllowedExtension(resolved)) {
+            return;
+        }
+        const std::vector<std::uint8_t> data = base64Decode(message.value("data", ""));
         std::string writeError;
-        if (compiler::writeFile(resolved, message.value("content", ""), writeError)) {
+        std::ofstream output(resolved, std::ios::binary | std::ios::trunc);
+        if (output) {
+            output.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
+        }
+        if (output) {
             broadcast(protocol::Json{{"type", "file_upload"}, {"path", fs::relative(resolved, projectRoot_).generic_string()}});
             broadcast(makeFileListMessage());
         }
