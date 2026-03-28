@@ -90,7 +90,8 @@ void renderDirectoryNode(AppState& state, editor::EditorModule& editorModule, co
     }
 
     for (const auto& entry : files) {
-        const bool selected = fs::equivalent(entry.path(), state.texPath, ec);
+        const fs::path currentPath = fs::absolute(state.projectRoot / state.serverMainTexPath);
+        const bool selected = fs::equivalent(entry.path(), currentPath, ec);
         if (ImGui::Selectable(entry.path().filename().string().c_str(), selected)) {
             std::string error;
             if (!editor::loadDocument(state, editorModule, entry.path(), error)) {

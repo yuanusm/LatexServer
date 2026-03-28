@@ -25,34 +25,6 @@ fs::path detectProjectRoot(const fs::path& argv0) {
     return current;
 }
 
-std::string quotePath(const fs::path& path) {
-    const std::string input = path.string();
-    std::string escaped;
-    escaped.reserve(input.size() + 2);
-    escaped.push_back('"');
-    for (const char ch : input) {
-        if (ch == '"') {
-            escaped += '\\';
-        }
-        escaped.push_back(ch);
-    }
-    escaped.push_back('"');
-    return escaped;
-}
-
-std::string buildCommand(const std::string& executable, const std::vector<std::string>& args) {
-    std::ostringstream command;
-    command << executable;
-    for (const std::string& arg : args) {
-        command << ' ' << arg;
-    }
-    return command.str();
-}
-
-std::string buildOptionWithPath(const std::string& flag, const fs::path& path) {
-    return flag + "=" + quotePath(path);
-}
-
 std::string readFile(const fs::path& path) {
     std::ifstream input(path, std::ios::binary);
     if (!input) {

@@ -1,11 +1,14 @@
 #include "compiler.h"
+#include "log.h"
 #include "network/server.hpp"
 
 #include <filesystem>
-#include <iostream>
+#include <string>
 
 int main(int argc, char** argv) {
     namespace fs = std::filesystem;
+
+    setLogComponent(LogComponent::SERVER);
 
     const fs::path argv0 = argc > 0 ? fs::path(argv[0]) : fs::current_path();
     const fs::path projectRoot = compiler::detectProjectRoot(argv0);
@@ -19,7 +22,7 @@ int main(int argc, char** argv) {
         network::CollabServer server(projectRoot, port);
         server.run();
     } catch (const std::exception& ex) {
-        std::cerr << "Server failed: " << ex.what() << "\n";
+        log(LogLevel::ERROR, std::string("Server failed: ") + ex.what());
         return EXIT_FAILURE;
     }
 
