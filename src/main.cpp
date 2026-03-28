@@ -5,6 +5,7 @@
 #include "TextEditor.h"
 #include "core/editor_sync.hpp"
 #include "core/file_sync.hpp"
+#include "log.h"
 #include "network/client.hpp"
 
 #include <GLFW/glfw3.h>
@@ -82,10 +83,16 @@ void requestServerCompile(AppState& state) {
     state.compileRequested = false;
     state.compileInProgress = true;
     state.lastCompileSuccess = false;
+    state.clientState = AppState::ClientState::COMPILING;
+    state.expectedPdfChunks = 0;
+    state.receivedPdfChunks = 0;
+    state.receivedPdfLastFlag = false;
     state.status = "Compile request sent to server...";
+    log(LogLevel::INFO, "compile_request sent");
     std::string error;
     if (!state.collab.client->send({{"type", "compile_request"}}, error)) {
         state.compileInProgress = false;
+        state.clientState = AppState::ClientState::ERROR;
         state.status = "Compile request failed: " + error;
     }
 }
@@ -107,7 +114,9 @@ void pollCollaboration(AppState& state, editor::EditorModule& editorModule) {
                 }
                 state.collab.lastSyncedContent = content;
                 state.editorDirty = false;
+                state.clientState = AppState::ClientState::EDITING;
                 state.status = "Document synchronized from server main.tex.";
+                log(LogLevel::INFO, "sync applied");
             }
             continue;
         }
@@ -118,9 +127,14 @@ void pollCollaboration(AppState& state, editor::EditorModule& editorModule) {
             state.lastCompileSuccess = success;
             if (success) {
                 state.incomingPdfBase64.clear();
+                state.expectedPdfChunks = message.value("chunk_count", 0U);
+                state.receivedPdfChunks = 0;
+                state.receivedPdfLastFlag = false;
+                state.clientState = AppState::ClientState::RECEIVING_PDF;
                 state.status = "Server compilation succeeded. Receiving PDF...";
             } else {
                 state.lastCompileLog = message.value("log", "Server compilation failed.");
+                state.clientState = AppState::ClientState::ERROR;
                 state.status = state.lastCompileLog;
             }
             continue;
@@ -128,23 +142,45 @@ void pollCollaboration(AppState& state, editor::EditorModule& editorModule) {
 
         if (type == "pdf_chunk") {
             const std::string data = message.value("data", "");
+            const std::size_t chunkIndex = message.value("index", 0U);
+            const std::size_t totalChunks = message.value("total", state.expectedPdfChunks);
             state.incomingPdfBase64 += data;
+            ++state.receivedPdfChunks;
             const bool last = message.value("last", false);
             if (last) {
+                state.receivedPdfLastFlag = true;
+            }
+            log(LogLevel::INFO, "pdf_chunk received (" + std::to_string(chunkIndex + 1) + "/" + std::to_string(totalChunks) + ")");
+            if (last) {
+                const bool countsMatch = (totalChunks > 0) && (state.receivedPdfChunks == totalChunks);
+                if (!countsMatch) {
+                    state.compileInProgress = false;
+                    state.clientState = AppState::ClientState::ERROR;
+                    state.status = "Missing PDF chunks from server. Expected " + std::to_string(totalChunks) +
+                        ", got " + std::to_string(state.receivedPdfChunks) + ".";
+                    log(LogLevel::ERROR, "PDF reconstruction aborted due to missing chunks");
+                    state.incomingPdfBase64.clear();
+                    continue;
+                }
                 const std::vector<std::uint8_t> bytes = base64Decode(state.incomingPdfBase64);
                 std::error_code ec;
                 fs::create_directories(state.receivedPdfPath.parent_path(), ec);
                 std::ofstream out(state.receivedPdfPath, std::ios::binary | std::ios::trunc);
                 if (!out) {
+                    state.clientState = AppState::ClientState::ERROR;
                     state.status = "Failed to store PDF locally: " + state.receivedPdfPath.string();
                 } else {
                     out.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
                     if (out) {
+                        state.clientState = AppState::ClientState::CONNECTED;
                         state.status = "PDF received from server: " + state.receivedPdfPath.string();
+                        log(LogLevel::INFO, "PDF reconstruction complete");
                     } else {
+                        state.clientState = AppState::ClientState::ERROR;
                         state.status = "Failed while writing PDF to: " + state.receivedPdfPath.string();
                     }
                 }
+                state.compileInProgress = false;
                 state.incomingPdfBase64.clear();
             }
             continue;
@@ -168,7 +204,9 @@ void pollCollaboration(AppState& state, editor::EditorModule& editorModule) {
 
     if (!state.collab.client->isConnected()) {
         state.collab.connected = false;
+        state.clientState = AppState::ClientState::IDLE;
         state.status = "Disconnected from collaboration server.";
+        log(LogLevel::WARN, "Disconnected from server.");
     }
 }
 
@@ -186,6 +224,7 @@ void rebuildFontsIfNeeded(AppState& state, editor::EditorModule& editorModule, I
 }  // namespace
 
 int main() {
+    setLogComponent(LogComponent::CLIENT);
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW.\n";
         return EXIT_FAILURE;
@@ -218,6 +257,7 @@ int main() {
     state.serverMainTexPath = "main.tex";
     state.receivedPdfPath = state.projectRoot / "client_temp" / "main.pdf";
     state.status = "Ready. Connect to server, edit main.tex, and request compile.";
+    log(LogLevel::INFO, "Client initialized.");
 
     editor::EditorModule editorModule;
     editor::initialize(state, editorModule, io);
@@ -230,6 +270,9 @@ int main() {
         requestServerCompile(state);
         pollCollaboration(state, editorModule);
         rebuildFontsIfNeeded(state, editorModule, io);
+        if (state.editorDirty && state.collab.connected) {
+            state.clientState = AppState::ClientState::EDITING;
+        }
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();

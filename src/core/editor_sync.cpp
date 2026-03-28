@@ -1,6 +1,7 @@
 #include "core/editor_sync.hpp"
 
 #include "TextEditor.h"
+#include "log.h"
 #include "network/client.hpp"
 
 #include <chrono>
@@ -30,8 +31,11 @@ void processOutgoingSync(AppState& state, editor::EditorModule& module) {
     if (state.collab.client->send({{"type", "sync"}, {"content", text}}, error)) {
         state.collab.lastSyncedContent = text;
         state.collab.lastSyncSentAt = now;
+        log(LogLevel::INFO, "sync sent");
     } else {
         state.status = "Sync send failed: " + error;
+        state.clientState = AppState::ClientState::ERROR;
+        log(LogLevel::ERROR, "sync send failed: " + error);
     }
 }
 

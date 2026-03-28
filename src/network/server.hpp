@@ -48,7 +48,7 @@ private:
     void ensureMainDocument();
     void updateMainDocument(const std::string& content);
 
-    void enqueueCompile();
+    bool tryEnqueueCompile();
     void compileWorkerLoop();
     CompileOutcome runLatexmk();
     void broadcastCompileOutcome(const CompileOutcome& outcome);
@@ -68,6 +68,7 @@ private:
     std::mutex compileMutex_;
     std::condition_variable compileCv_;
     bool stopCompileWorker_ = false;
+    bool compileRunning_ = false;
     int pendingCompileRequests_ = 0;
     std::thread compileWorker_;
 };
