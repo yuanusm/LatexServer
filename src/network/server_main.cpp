@@ -1,4 +1,3 @@
-#include "compiler.h"
 #include "log.h"
 #include "network/server.hpp"
 
@@ -10,8 +9,7 @@ int main(int argc, char** argv) {
 
     setLogComponent(LogComponent::SERVER);
 
-    const fs::path argv0 = argc > 0 ? fs::path(argv[0]) : fs::current_path();
-    const fs::path projectRoot = compiler::detectProjectRoot(argv0);
+    const fs::path projectRoot = fs::path("server_project");
 
     std::uint16_t port = 9090;
     if (argc > 1) {
@@ -19,6 +17,8 @@ int main(int argc, char** argv) {
     }
 
     try {
+        std::error_code ec;
+        fs::create_directories(projectRoot, ec);
         network::CollabServer server(projectRoot, port);
         server.run();
     } catch (const std::exception& ex) {

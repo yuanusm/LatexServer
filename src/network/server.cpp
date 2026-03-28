@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <set>
 #include <sstream>
 #include <system_error>
 #include <vector>
@@ -36,19 +37,6 @@ bool startsWithPath(const fs::path& root, const fs::path& candidate) {
     return true;
 }
 
-std::vector<std::string> listFilesRecursive(const fs::path& root) {
-    std::vector<std::string> files;
-    std::error_code ec;
-    for (fs::recursive_directory_iterator it(root, ec), end; it != end && !ec; it.increment(ec)) {
-        if (!it->is_regular_file(ec)) {
-            continue;
-        }
-        files.push_back(it->path().lexically_relative(root).generic_string());
-    }
-    std::sort(files.begin(), files.end());
-    return files;
-}
-
 struct FileEntry {
     std::string path;
     bool isDirectory = false;
@@ -61,20 +49,64 @@ bool isAllowedExtension(const fs::path& path) {
     return std::find(allowed.begin(), allowed.end(), ext) != allowed.end();
 }
 
-std::vector<FileEntry> listEntriesRecursive(const fs::path& root) {
+bool isForbiddenDirectory(const fs::path& path) {
+    const std::string name = path.filename().string();
+    if (name.empty()) {
+        return false;
+    }
+    if (name[0] == '.') {
+        return true;
+    }
+    return name == "build" || name == "_deps" || name == "client_temp" || name == ".git";
+}
+
+std::vector<FileEntry> scanProjectTree(const fs::path& root) {
+    log(LogLevel::INFO, "Scanning project tree: " + root.string());
     std::vector<FileEntry> entries;
+    std::set<std::string> uniquePaths;
+    std::error_code rootEc;
+    const fs::path canonicalRoot = fs::weakly_canonical(root, rootEc);
+    if (rootEc) {
+        log(LogLevel::ERROR, "Failed to resolve root for scan: " + root.string());
+        return entries;
+    }
+
     std::error_code ec;
-    for (fs::recursive_directory_iterator it(root, ec), end; it != end && !ec; it.increment(ec)) {
+    fs::recursive_directory_iterator it(canonicalRoot, fs::directory_options::skip_permission_denied, ec);
+    fs::recursive_directory_iterator end;
+    for (; it != end && !ec; it.increment(ec)) {
+        if (it->is_directory(ec) && isForbiddenDirectory(it->path())) {
+            log(LogLevel::INFO, "Skipping directory during scan: " + it->path().string());
+            it.disable_recursion_pending();
+            continue;
+        }
+
+        std::error_code canonicalEc;
+        const fs::path canonicalPath = fs::weakly_canonical(it->path(), canonicalEc);
+        if (canonicalEc || !startsWithPath(canonicalRoot, canonicalPath)) {
+            log(LogLevel::WARN, "Skipping out-of-root path during scan: " + it->path().string());
+            continue;
+        }
+
+        std::error_code relEc;
+        const std::string relativePath = fs::relative(canonicalPath, canonicalRoot, relEc).generic_string();
+        if (relEc || relativePath.empty() || relativePath == ".") {
+            continue;
+        }
+
         FileEntry entry;
-        entry.path = it->path().lexically_relative(root).generic_string();
+        entry.path = relativePath;
         entry.isDirectory = it->is_directory(ec);
         if (!entry.isDirectory && it->is_regular_file(ec)) {
-            if (!isAllowedExtension(it->path())) {
+            if (!isAllowedExtension(canonicalPath)) {
                 continue;
             }
             entry.size = static_cast<std::size_t>(it->file_size(ec));
         }
-        entries.push_back(std::move(entry));
+
+        if (uniquePaths.insert(entry.path).second) {
+            entries.push_back(std::move(entry));
+        }
     }
     std::sort(entries.begin(), entries.end(), [](const FileEntry& a, const FileEntry& b) { return a.path < b.path; });
     return entries;
@@ -306,6 +338,7 @@ bool CollabServer::resolveInsideRoot(const fs::path& candidate, fs::path& resolv
     const std::string raw = candidate.generic_string();
     if (raw.find("..") != std::string::npos) {
         error = "Path must not contain '..'.";
+        log(LogLevel::WARN, "Rejected path with traversal attempt: " + candidate.string());
         return false;
     }
 
@@ -316,13 +349,15 @@ bool CollabServer::resolveInsideRoot(const fs::path& candidate, fs::path& resolv
         const fs::path parent = fs::weakly_canonical(combined.parent_path(), ec);
         if (ec) {
             error = "Invalid path.";
+            log(LogLevel::WARN, "Rejected invalid path: " + candidate.string());
             return false;
         }
         resolved = (parent / combined.filename()).lexically_normal();
     }
 
-    if (!startsWithPath(projectRoot_, resolved)) {
+    if (!startsWithPath(projectRoot_, resolved) || resolved.string().find(projectRoot_.string()) != 0) {
         error = "Resolved path escapes project root.";
+        log(LogLevel::WARN, "Rejected invalid path: " + candidate.string());
         return false;
     }
 
@@ -339,10 +374,14 @@ protocol::Json CollabServer::makeUsersMessage() const {
 }
 
 protocol::Json CollabServer::makeFileListMessage() const {
-    const auto files = listFilesRecursive(projectRoot_);
-    const auto entries = listEntriesRecursive(projectRoot_);
+    const auto entries = scanProjectTree(projectRoot_);
+    std::vector<std::string> files;
+    files.reserve(entries.size());
     protocol::Json entriesJson = protocol::Json::array();
     for (const auto& entry : entries) {
+        if (!entry.isDirectory) {
+            files.push_back(entry.path);
+        }
         entriesJson.push_back({{"path", entry.path}, {"is_directory", entry.isDirectory}, {"size", entry.size}});
     }
     return protocol::Json{{"type", "file_list"}, {"files", files}, {"entries", entriesJson}};

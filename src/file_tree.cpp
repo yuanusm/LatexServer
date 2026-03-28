@@ -257,7 +257,7 @@ void renderCreationPopups(AppState& state, editor::EditorModule& editorModule, F
 void initialize(FileTreeModule& module, const fs::path& projectRoot) {
     module.newFilePath = "new-file.tex";
     module.newFolderPath = "chapter-assets";
-    module.copyDestinationPath = (projectRoot / "assets" / "copied-file.tex").lexically_relative(projectRoot).string();
+    module.copyDestinationPath = (projectRoot / "images" / "copied-file.tex").lexically_relative(projectRoot).string();
 }
 
 bool resolveProjectPath(const fs::path& projectRoot, const fs::path& candidate, fs::path& resolved, std::string& error) {
