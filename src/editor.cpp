@@ -16,6 +16,8 @@
 #include <memory>
 #include <set>
 #include <sstream>
+#include <utility>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -23,6 +25,158 @@ namespace editor {
 namespace {
 
 std::unique_ptr<TextEditor> gEditor;
+
+struct CompletionItem {
+    std::string label;
+    std::string insertText;
+    int cursorOffset = 0;
+    bool isTemplate = false;
+};
+
+const std::vector<CompletionItem> kLatexCommands = {
+    {"\\section", "\\section{}", 9, false},
+    {"\\subsection", "\\subsection{}", 12, false},
+    {"\\paragraph", "\\paragraph{}", 11, false},
+    {"\\begin", "\\begin{}", 7, false},
+    {"\\end", "\\end{}", 5, false},
+    {"\\frac", "\\frac{}{}", 6, false},
+    {"\\sum", "\\sum_{}^{}", 6, false},
+    {"\\int", "\\int_{}^{}", 6, false},
+    {"\\sqrt", "\\sqrt{}", 6, false},
+    {"\\alpha", "\\alpha", 6, false},
+    {"\\beta", "\\beta", 5, false},
+    {"\\textbf", "\\textbf{}", 8, false},
+    {"\\textit", "\\textit{}", 8, false},
+    {"\\includegraphics", "\\includegraphics[]{}", 17, false},
+    {"\\label", "\\label{}", 7, false},
+    {"\\ref", "\\ref{}", 5, false},
+    {"\\cite", "\\cite{}", 6, false},
+    {"\\item", "\\item ", 6, false},
+};
+
+const std::vector<CompletionItem> kLatexTemplates = {
+    {"Template: itemize", "\\begin{itemize}\n    \\item \n\\end{itemize}", 24, true},
+    {"Template: enumerate", "\\begin{enumerate}\n    \\item \n\\end{enumerate}", 26, true},
+    {"Template: figure", "\\begin{figure}[h]\n    \\centering\n    \\includegraphics[width=0.8\\\\textwidth]{}\n    \\caption{}\n    \\label{fig:}\n\\end{figure}", 78, true},
+    {"Template: equation", "\\begin{equation}\n    \n\\end{equation}", 22, true},
+    {"Template: align", "\\begin{align}\n    \n\\end{align}", 19, true},
+    {"Template: fraction", "\\frac{}{}", 6, true},
+    {"Template: sqrt", "\\sqrt{}", 6, true},
+    {"Template: sum", "\\sum_{i=1}^{n}", 7, true},
+    {"Template: integral", "\\int_{a}^{b}", 7, true},
+    {"Template: table", "\\begin{table}[h]\n    \\centering\n    \\begin{tabular}{|c|c|}\n        \\hline\n         &  \\\\\n        \\hline\n    \\end{tabular}\n    \\caption{}\n    \\label{tab:}\n\\end{table}", 98, true},
+};
+
+bool extractCompletionPrefix(const std::string& text, std::size_t& slashPos, std::string& prefix) {
+    slashPos = std::string::npos;
+    prefix.clear();
+    if (text.empty()) {
+        return false;
+    }
+    std::size_t idx = text.size();
+    while (idx > 0 && std::isalpha(static_cast<unsigned char>(text[idx - 1]))) {
+        --idx;
+    }
+    if (idx == text.size()) {
+        return false;
+    }
+    if (idx == 0 || text[idx - 1] != '\\') {
+        return false;
+    }
+    slashPos = idx - 1;
+    prefix = text.substr(idx);
+    return !prefix.empty();
+}
+
+void renderAutocomplete(AppState& state, EditorModule& module) {
+    if (!module.textEditor) {
+        return;
+    }
+    const auto cursor = module.textEditor->GetCursorPosition();
+    const std::string allText = module.textEditor->GetText();
+    std::size_t byteIndex = 0;
+    int line = 0;
+    int column = 0;
+    for (; byteIndex < allText.size(); ++byteIndex) {
+        if (line == cursor.mLine && column == cursor.mColumn) {
+            break;
+        }
+        if (allText[byteIndex] == '\n') {
+            ++line;
+            column = 0;
+        } else {
+            ++column;
+        }
+    }
+    const std::string prefixText = allText.substr(0, byteIndex);
+    std::size_t slashPos = std::string::npos;
+    std::string prefix;
+    if (!extractCompletionPrefix(prefixText, slashPos, prefix)) {
+        ImGui::CloseCurrentPopup();
+        return;
+    }
+
+    std::vector<CompletionItem> commandMatches;
+    for (const auto& item : kLatexCommands) {
+        if (item.label.size() > 1 && item.label.rfind("\\" + prefix, 0) == 0) {
+            commandMatches.push_back(item);
+        }
+    }
+    const bool showPopup = !commandMatches.empty() || !kLatexTemplates.empty();
+    if (!showPopup) {
+        return;
+    }
+
+    ImGui::SetNextWindowBgAlpha(0.96f);
+    if (ImGui::Begin("Autocomplete##Latex", nullptr,
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::TextUnformatted("Commands");
+        for (const auto& match : commandMatches) {
+            if (ImGui::Selectable(match.label.c_str())) {
+                const std::string replaced =
+                    allText.substr(0, slashPos) + match.insertText + allText.substr(byteIndex);
+                module.textEditor->SetText(replaced);
+                const std::size_t target = slashPos + static_cast<std::size_t>(match.cursorOffset);
+                int targetLine = 0;
+                int targetCol = 0;
+                for (std::size_t i = 0; i < std::min(target, replaced.size()); ++i) {
+                    if (replaced[i] == '\n') {
+                        ++targetLine;
+                        targetCol = 0;
+                    } else {
+                        ++targetCol;
+                    }
+                }
+                module.textEditor->SetCursorPosition({targetLine, targetCol});
+                state.editorDirty = true;
+            }
+        }
+
+        ImGui::Separator();
+        ImGui::TextUnformatted("Templates");
+        for (const auto& item : kLatexTemplates) {
+            if (ImGui::Selectable(item.label.c_str())) {
+                const std::string replaced =
+                    allText.substr(0, byteIndex) + item.insertText + allText.substr(byteIndex);
+                module.textEditor->SetText(replaced);
+                const std::size_t target = byteIndex + static_cast<std::size_t>(item.cursorOffset);
+                int targetLine = 0;
+                int targetCol = 0;
+                for (std::size_t i = 0; i < std::min(target, replaced.size()); ++i) {
+                    if (replaced[i] == '\n') {
+                        ++targetLine;
+                        targetCol = 0;
+                    } else {
+                        ++targetCol;
+                    }
+                }
+                module.textEditor->SetCursorPosition({targetLine, targetCol});
+                state.editorDirty = true;
+            }
+        }
+    }
+    ImGui::End();
+}
 
 std::string toLower(std::string value) {
     std::transform(value.begin(), value.end(), value.begin(), [](unsigned char ch) {
@@ -222,6 +376,7 @@ void renderEditor(AppState& state, EditorModule& module, const ImVec2& size) {
     }
 
     module.textEditor->Render("LaTeXSourceEditor", size, false);
+    renderAutocomplete(state, module);
     if (module.textEditor->IsTextChanged()) {
         state.editorDirty = true;
         state.lastEditAt = std::chrono::steady_clock::now();

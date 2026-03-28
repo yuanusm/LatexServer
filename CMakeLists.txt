@@ -85,7 +85,7 @@ target_compile_definitions(collab_lib PUBLIC ASIO_STANDALONE)
 target_link_libraries(collab_lib PUBLIC nlohmann_json::nlohmann_json)
 
 if(WIN32)
-    target_link_libraries(collab_lib PUBLIC ws2_32 mswsock)
+    target_link_libraries(collab_lib PUBLIC ws2_32 mswsock comdlg32)
 endif()
 
 add_executable(latex_server

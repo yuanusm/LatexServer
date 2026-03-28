@@ -27,11 +27,21 @@ void processOutgoingSync(AppState& state, editor::EditorModule& module) {
         return;
     }
 
+    const bool editingMainDocument =
+        state.collab.currentOpenFile.empty() || state.collab.currentOpenFile == "main.tex";
+
+    network::protocol::Json message;
+    if (editingMainDocument) {
+        message = {{"type", "sync"}, {"content", text}};
+    } else {
+        message = {{"type", "file_save"}, {"path", state.collab.currentOpenFile}, {"content", text}};
+    }
+
     std::string error;
-    if (state.collab.client->send({{"type", "sync"}, {"content", text}}, error)) {
+    if (state.collab.client->send(message, error)) {
         state.collab.lastSyncedContent = text;
         state.collab.lastSyncSentAt = now;
-        log(LogLevel::INFO, "sync sent");
+        log(LogLevel::INFO, editingMainDocument ? "sync sent" : "file_save sent");
     } else {
         state.status = "Sync send failed: " + error;
         state.clientState = AppState::ClientState::ERROR;
