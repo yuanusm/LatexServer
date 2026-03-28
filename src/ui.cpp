@@ -7,13 +7,19 @@
 #include <imgui.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <set>
 #include <string>
 #include <vector>
+
+#ifdef _WIN32
+#include <commdlg.h>
+#endif
 
 namespace fs = std::filesystem;
 
@@ -94,6 +100,14 @@ bool isDirectChildOf(const std::string& parent, const std::string& candidate) {
     return candidate.find('/', prefix.size()) == std::string::npos;
 }
 
+bool isTexPath(const std::string& path) {
+    std::string ext = fs::path(path).extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char ch) {
+        return static_cast<char>(std::tolower(ch));
+    });
+    return ext == ".tex";
+}
+
 void requestRemoteFileList(AppState& state) {
     if (!state.collab.connected || !state.collab.client) {
         return;
@@ -108,16 +122,14 @@ void openRemoteFile(AppState& state, editor::EditorModule& editorModule, const s
     }
 
     std::string error;
-    if (!state.collab.lastOpenedRemotePath.empty() && editorModule.textEditor) {
+    if (!state.collab.currentOpenFile.empty() && editorModule.textEditor) {
         const std::string currentText = editorModule.textEditor->GetText();
         const network::protocol::Json saveMessage{
             {"type", "file_save"},
-            {"path", state.collab.lastOpenedRemotePath},
+            {"path", state.collab.currentOpenFile},
             {"content", currentText}
         };
-        state.collab.client->send(
-            saveMessage,
-            error);
+        state.collab.client->send(saveMessage, error);
     }
 
     error.clear();
@@ -125,8 +137,55 @@ void openRemoteFile(AppState& state, editor::EditorModule& editorModule, const s
         state.status = "Failed to open remote file: " + error;
         state.clientState = AppState::ClientState::ERROR;
     } else {
+        state.collab.currentOpenFile = path;
         state.collab.lastOpenedRemotePath = path;
     }
+}
+
+void uploadFileFromNativeDialog(AppState& state) {
+    if (!state.collab.connected || !state.collab.client) {
+        state.status = "Connect to server before uploading.";
+        return;
+    }
+
+#ifdef _WIN32
+    char selectedPath[MAX_PATH] = {};
+    OPENFILENAMEA ofn{};
+    ofn.lStructSize = sizeof(ofn);
+    ofn.lpstrFile = selectedPath;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.lpstrTitle = "Upload file to project";
+    ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
+    if (!GetOpenFileNameA(&ofn)) {
+        return;
+    }
+
+    std::ifstream in(selectedPath, std::ios::binary);
+    if (!in) {
+        state.status = "Unable to open selected upload file.";
+        return;
+    }
+
+    std::vector<std::uint8_t> bytes(
+        std::istreambuf_iterator<char>(in),
+        std::istreambuf_iterator<char>());
+    constexpr std::size_t kMaxUploadBytes = 15 * 1024 * 1024;
+    if (bytes.size() > kMaxUploadBytes) {
+        state.status = "Upload rejected on client: file exceeds 15MB limit.";
+        return;
+    }
+
+    std::string error;
+    const std::string name = fs::path(selectedPath).filename().generic_string();
+    if (state.collab.client->send({{"type", "file_upload"}, {"name", name}, {"data", base64Encode(bytes)}}, error)) {
+        state.status = "Uploaded file: " + name;
+        requestRemoteFileList(state);
+    } else {
+        state.status = "Upload failed: " + error;
+    }
+#else
+    state.status = "Upload File dialog is only available on Windows builds.";
+#endif
 }
 
 void renderDirectoryRecursive(
@@ -147,8 +206,8 @@ void renderDirectoryRecursive(
 
             for (const auto& file : files) {
                 if (isDirectChildOf(dir, file.path)) {
-                    const bool selected = (state.collab.lastOpenedRemotePath == file.path);
-                    if (ImGui::Selectable(fileNameFromPath(file.path).c_str(), selected)) {
+                    const bool selected = (state.collab.currentOpenFile == file.path);
+                    if (ImGui::Selectable(fileNameFromPath(file.path).c_str(), selected) && isTexPath(file.path)) {
                         openRemoteFile(state, editorModule, file.path);
                     }
                 }
@@ -160,8 +219,8 @@ void renderDirectoryRecursive(
 
     for (const auto& file : files) {
         if (isDirectChildOf(parent, file.path)) {
-            const bool selected = (state.collab.lastOpenedRemotePath == file.path);
-            if (ImGui::Selectable(fileNameFromPath(file.path).c_str(), selected)) {
+            const bool selected = (state.collab.currentOpenFile == file.path);
+            if (ImGui::Selectable(fileNameFromPath(file.path).c_str(), selected) && isTexPath(file.path)) {
                 openRemoteFile(state, editorModule, file.path);
             }
         }
@@ -192,6 +251,11 @@ void renderToolbar(AppState& state) {
         state.collab.users.clear();
         state.clientState = AppState::ClientState::IDLE;
         state.status = "Disconnected from collaboration server.";
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Upload File")) {
+        uploadFileFromNativeDialog(state);
     }
 
     ImGui::SameLine();
@@ -247,31 +311,6 @@ void renderFileTreePanel(AppState& state, editor::EditorModule& editorModule, co
 
     if (ImGui::Button("Refresh Files")) {
         requestRemoteFileList(state);
-    }
-
-    ImGui::Separator();
-
-    static char uploadSource[512] = "";
-    static char uploadDestination[512] = "images/upload.png";
-
-    ImGui::InputText("Source", uploadSource, sizeof(uploadSource));
-    ImGui::InputText("Target", uploadDestination, sizeof(uploadDestination));
-    if (ImGui::Button("Upload Image") && state.collab.connected && state.collab.client) {
-        std::ifstream in(uploadSource, std::ios::binary);
-        std::vector<std::uint8_t> bytes;
-        if (!in) {
-            state.status = "Unable to open upload file.";
-        } else {
-            bytes.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
-            const std::string encoded = base64Encode(bytes);
-            std::string error;
-            if (state.collab.client->send({{"type", "file_upload"}, {"path", uploadDestination}, {"data", encoded}}, error)) {
-                state.status = "Image uploaded: " + std::string(uploadDestination);
-                requestRemoteFileList(state);
-            } else {
-                state.status = "Upload failed: " + error;
-            }
-        }
     }
 
     ImGui::Separator();
