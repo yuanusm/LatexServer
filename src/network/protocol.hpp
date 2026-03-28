@@ -4,6 +4,10 @@
 
 #include <asio.hpp>
 
+#ifdef ERROR
+#undef ERROR
+#endif
+
 #include <algorithm>
 #include <array>
 #include <cstdint>
