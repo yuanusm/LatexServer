@@ -166,9 +166,9 @@ void uploadFileFromNativeDialog(AppState& state) {
         return;
     }
 
-    std::vector<std::uint8_t> bytes(
+    std::vector<std::uint8_t> bytes{
         std::istreambuf_iterator<char>(in),
-        std::istreambuf_iterator<char>());
+        std::istreambuf_iterator<char>()};
     constexpr std::size_t kMaxUploadBytes = 15 * 1024 * 1024;
     if (bytes.size() > kMaxUploadBytes) {
         state.status = "Upload rejected on client: file exceeds 15MB limit.";
@@ -177,7 +177,12 @@ void uploadFileFromNativeDialog(AppState& state) {
 
     std::string error;
     const std::string name = fs::path(selectedPath).filename().generic_string();
-    if (state.collab.client->send({{"type", "file_upload"}, {"name", name}, {"data", base64Encode(bytes)}}, error)) {
+    const network::protocol::Json uploadMessage{
+        {"type", "file_upload"},
+        {"name", name},
+        {"data", base64Encode(bytes)}
+    };
+    if (state.collab.client->send(uploadMessage, error)) {
         state.status = "Uploaded file: " + name;
         requestRemoteFileList(state);
     } else {
