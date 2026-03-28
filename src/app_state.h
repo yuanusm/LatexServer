@@ -13,6 +13,15 @@ class CollabClient;
 }
 
 struct AppState {
+    enum class ClientState {
+        IDLE,
+        CONNECTED,
+        EDITING,
+        COMPILING,
+        RECEIVING_PDF,
+        ERROR
+    };
+
     struct UserInfo {
         int id = 0;
         std::string name;
@@ -49,6 +58,11 @@ struct AppState {
     bool lastCompileSuccess = false;
 
     std::string incomingPdfBase64;
+    std::size_t expectedPdfChunks = 0;
+    std::size_t receivedPdfChunks = 0;
+    bool receivedPdfLastFlag = false;
+
+    ClientState clientState = ClientState::IDLE;
 
     CollaborationState collab;
 };

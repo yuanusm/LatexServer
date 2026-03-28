@@ -10,6 +10,24 @@
 namespace ui {
 namespace {
 
+const char* toClientStateText(AppState::ClientState state) {
+    switch (state) {
+        case AppState::ClientState::IDLE:
+            return "IDLE";
+        case AppState::ClientState::CONNECTED:
+            return "CONNECTED";
+        case AppState::ClientState::EDITING:
+            return "EDITING";
+        case AppState::ClientState::COMPILING:
+            return "COMPILING";
+        case AppState::ClientState::RECEIVING_PDF:
+            return "RECEIVING_PDF";
+        case AppState::ClientState::ERROR:
+            return "ERROR";
+    }
+    return "IDLE";
+}
+
 void renderToolbar(AppState& state) {
     if (ImGui::Button("Compile")) {
         state.compileRequested = true;
@@ -25,10 +43,12 @@ void renderToolbar(AppState& state) {
         std::string error;
         if (state.collab.client && state.collab.client->connect(state.collab.host, static_cast<std::uint16_t>(state.collab.port), error)) {
             state.collab.connected = true;
+            state.clientState = AppState::ClientState::CONNECTED;
             state.status = "Connected to collaboration server.";
         } else {
             state.status = "Connection failed: " + error;
             state.collab.connected = false;
+            state.clientState = AppState::ClientState::ERROR;
         }
     }
 
@@ -39,6 +59,7 @@ void renderToolbar(AppState& state) {
         }
         state.collab.connected = false;
         state.collab.users.clear();
+        state.clientState = AppState::ClientState::IDLE;
         state.status = "Disconnected from collaboration server.";
     }
 
@@ -131,6 +152,7 @@ void renderMainWindow(AppState& state, editor::EditorModule& editorModule) {
 
     ImGui::Separator();
     ImGui::TextWrapped("Status: %s", state.status.c_str());
+    ImGui::TextWrapped("Client state: %s", toClientStateText(state.clientState));
     ImGui::TextUnformatted(state.compileInProgress ? "Compilation: waiting for server" : (state.lastCompileSuccess ? "Compilation: last run succeeded" : "Compilation: idle or last run failed"));
     ImGui::TextWrapped("Server main.tex: %s", state.serverMainTexPath.string().c_str());
     ImGui::TextWrapped("PDF output: %s", state.receivedPdfPath.string().c_str());

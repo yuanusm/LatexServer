@@ -70,6 +70,7 @@ target_include_directories(texteditor_lib PUBLIC
 target_link_libraries(texteditor_lib PUBLIC imgui_lib)
 
 add_library(collab_lib
+    src/log.cpp
     src/network/client.cpp
     src/network/server.cpp
 )

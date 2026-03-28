@@ -1,8 +1,11 @@
 #include "network/client.hpp"
+#include "log.h"
 
 namespace network {
 
-CollabClient::CollabClient() = default;
+CollabClient::CollabClient() {
+    setLogComponent(LogComponent::CLIENT);
+}
 
 CollabClient::~CollabClient() {
     disconnect();
@@ -18,10 +21,12 @@ bool CollabClient::connect(const std::string& host, std::uint16_t port, std::str
         socket_ = std::make_unique<asio::ip::tcp::socket>(ioContext_);
         asio::connect(*socket_, endpoints);
         connected_.store(true);
+        log(LogLevel::INFO, "Connected to server at " + host + ":" + std::to_string(port));
         readThread_ = std::thread([this]() { readLoop(); });
         return true;
     } catch (const std::exception& ex) {
         error = ex.what();
+        log(LogLevel::ERROR, "Connect failed: " + error);
         connected_.store(false);
         socket_.reset();
         return false;
@@ -29,6 +34,7 @@ bool CollabClient::connect(const std::string& host, std::uint16_t port, std::str
 }
 
 void CollabClient::disconnect() {
+    const bool wasConnected = connected_.load();
     connected_.store(false);
     if (socket_) {
         asio::error_code ec;
@@ -43,6 +49,9 @@ void CollabClient::disconnect() {
     socket_.reset();
     std::lock_guard<std::mutex> lock(mutex_);
     inbox_.clear();
+    if (wasConnected) {
+        log(LogLevel::INFO, "Disconnected from server.");
+    }
 }
 
 bool CollabClient::isConnected() const {
@@ -54,7 +63,11 @@ bool CollabClient::send(const protocol::Json& message, std::string& error) {
         error = "Not connected to collaboration server.";
         return false;
     }
-    return protocol::writeFrameBlocking(*socket_, message, error);
+    if (!protocol::writeFrameBlocking(*socket_, message, error)) {
+        log(LogLevel::ERROR, "Failed to send message: " + error);
+        return false;
+    }
+    return true;
 }
 
 std::vector<protocol::Json> CollabClient::pollIncoming() {
@@ -73,6 +86,9 @@ void CollabClient::readLoop() {
         std::string error;
         if (!protocol::readFrameBlocking(*socket_, message, error)) {
             connected_.store(false);
+            if (!error.empty()) {
+                log(LogLevel::WARN, "Read loop stopped: " + error);
+            }
             break;
         }
 
