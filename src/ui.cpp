@@ -1,5 +1,6 @@
 #include "ui.h"
 
+#include "TextEditor.h"
 #include "log.h"
 #include "network/client.hpp"
 
@@ -108,8 +109,14 @@ void openRemoteFile(AppState& state, editor::EditorModule& editorModule, const s
 
     std::string error;
     if (!state.collab.lastOpenedRemotePath.empty() && editorModule.textEditor) {
+        const std::string currentText = editorModule.textEditor->GetText();
+        const network::protocol::Json saveMessage{
+            {"type", "file_save"},
+            {"path", state.collab.lastOpenedRemotePath},
+            {"content", currentText}
+        };
         state.collab.client->send(
-            {{"type", "file_save"}, {"path", state.collab.lastOpenedRemotePath}, {"content", editorModule.textEditor->GetText()}},
+            saveMessage,
             error);
     }
 
