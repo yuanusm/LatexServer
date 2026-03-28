@@ -92,6 +92,7 @@ add_executable(latex_server
     src/main.cpp
     src/compiler.cpp
     src/editor.cpp
+    src/file_tree.cpp
     src/ui.cpp
     src/core/editor_sync.cpp
     src/core/file_sync.cpp
