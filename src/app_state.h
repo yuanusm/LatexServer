@@ -6,6 +6,10 @@
 #include <string>
 #include <vector>
 
+#ifdef ERROR
+#undef ERROR
+#endif
+
 namespace fs = std::filesystem;
 
 namespace network {
