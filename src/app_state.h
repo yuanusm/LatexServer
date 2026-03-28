@@ -50,6 +50,7 @@ struct AppState {
         std::vector<FileEntry> remoteFileEntries;
         std::string lastSyncedContent;
         std::string lastOpenedRemotePath;
+        std::string currentOpenFile = "main.tex";
         std::chrono::steady_clock::time_point lastSyncSentAt = std::chrono::steady_clock::now();
     };
 

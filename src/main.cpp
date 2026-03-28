@@ -105,7 +105,9 @@ void pollCollaboration(AppState& state, editor::EditorModule& editorModule) {
     for (const auto& message : state.collab.client->pollIncoming()) {
         const std::string type = message.value("type", "");
         if (type == "sync") {
-            if (editorModule.textEditor) {
+            const bool mainFocused =
+                state.collab.currentOpenFile.empty() || state.collab.currentOpenFile == "main.tex";
+            if (editorModule.textEditor && mainFocused) {
                 const std::string content = message.value("content", "");
                 if (content != editorModule.textEditor->GetText()) {
                     state.collab.suppressOutgoingSync = true;
@@ -117,6 +119,8 @@ void pollCollaboration(AppState& state, editor::EditorModule& editorModule) {
                 state.clientState = AppState::ClientState::EDITING;
                 state.status = "Document synchronized from server main.tex.";
                 log(LogLevel::INFO, "sync applied");
+            } else if (!mainFocused) {
+                state.collab.lastSyncedContent = message.value("content", "");
             }
             continue;
         }
@@ -147,13 +151,21 @@ void pollCollaboration(AppState& state, editor::EditorModule& editorModule) {
         if (type == "file_open") {
             if (editorModule.textEditor) {
                 const std::string content = message.value("content", "");
+                state.collab.currentOpenFile = message.value("path", "main.tex");
+                state.collab.lastOpenedRemotePath = state.collab.currentOpenFile;
                 state.collab.suppressOutgoingSync = true;
                 editorModule.textEditor->SetText(content);
                 state.collab.suppressOutgoingSync = false;
                 state.collab.lastSyncedContent = content;
-                state.serverMainTexPath = message.value("path", "main.tex");
-                state.status = "Opened remote file: " + state.serverMainTexPath.string();
+                state.serverMainTexPath = state.collab.currentOpenFile;
+                state.status = "Opened remote file: " + state.collab.currentOpenFile;
             }
+            continue;
+        }
+
+        if (type == "error") {
+            state.status = message.value("message", "Server error.");
+            state.clientState = AppState::ClientState::ERROR;
             continue;
         }
 
@@ -216,6 +228,10 @@ void pollCollaboration(AppState& state, editor::EditorModule& editorModule) {
             continue;
         }
 
+        if (type == "op_insert" || type == "op_delete") {
+            continue;
+        }
+
         core::file_sync::applyServerMessage(state, message);
     }
 
@@ -274,6 +290,7 @@ int main() {
     std::error_code ec;
     fs::create_directories(state.projectRoot, ec);
     state.serverMainTexPath = "main.tex";
+    state.collab.currentOpenFile = "main.tex";
     state.receivedPdfPath = state.projectRoot / "client_temp" / "main.pdf";
     state.status = "Ready. Connect to server, edit main.tex, and request compile.";
     log(LogLevel::INFO, "Client initialized.");

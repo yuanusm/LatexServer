@@ -7,6 +7,7 @@
 #include <array>
 #include <cerrno>
 #include <chrono>
+#include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -44,9 +45,20 @@ struct FileEntry {
 };
 
 bool isAllowedExtension(const fs::path& path) {
-    static const std::vector<std::string> allowed{".tex", ".png", ".jpg", ".jpeg", ".pdf"};
-    const std::string ext = path.extension().string();
+    static const std::vector<std::string> allowed{".tex", ".png", ".jpg", ".jpeg", ".pdf", ".bib", ".cls", ".sty"};
+    std::string ext = path.extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char ch) {
+        return static_cast<char>(std::tolower(ch));
+    });
     return std::find(allowed.begin(), allowed.end(), ext) != allowed.end();
+}
+
+bool isTextTexFile(const fs::path& path) {
+    std::string ext = path.extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char ch) {
+        return static_cast<char>(std::tolower(ch));
+    });
+    return ext == ".tex";
 }
 
 bool isForbiddenDirectory(const fs::path& path) {
@@ -547,6 +559,10 @@ void CollabServer::handleMessage(std::shared_ptr<ClientSession> session, const p
         return;
     }
 
+    if (type == "op_insert" || type == "op_delete") {
+        return;
+    }
+
     if (type == "file_list" || type == "file_list_request") {
         sendTo(session, makeFileListMessage());
         return;
@@ -558,30 +574,41 @@ void CollabServer::handleMessage(std::shared_ptr<ClientSession> session, const p
 
     if (type == "file_open") {
         if (!resolveInsideRoot(pathText, resolved, error)) {
+            sendTo(session, protocol::Json{{"type", "error"}, {"message", error}});
             return;
         }
-        if (!isAllowedExtension(resolved)) {
+        if (!isTextTexFile(resolved)) {
+            sendTo(session, protocol::Json{{"type", "error"}, {"message", "Only .tex files can be opened in the editor."}});
             return;
         }
         try {
             const std::string content = compiler::readFile(resolved);
             sendTo(session, protocol::Json{{"type", "file_open"}, {"path", fs::relative(resolved, projectRoot_).generic_string()}, {"content", content}});
-        } catch (...) {
+        } catch (const std::exception& ex) {
+            sendTo(session, protocol::Json{{"type", "error"}, {"message", std::string("Failed to open file: ") + ex.what()}});
         }
         return;
     }
 
     if (type == "file_save") {
         if (!resolveInsideRoot(pathText, resolved, error)) {
+            sendTo(session, protocol::Json{{"type", "error"}, {"message", error}});
             return;
         }
-        if (!isAllowedExtension(resolved)) {
+        if (!isTextTexFile(resolved)) {
+            sendTo(session, protocol::Json{{"type", "error"}, {"message", "Only .tex files can be saved from the editor."}});
             return;
         }
         std::string writeError;
         if (compiler::writeFile(resolved, message.value("content", ""), writeError)) {
             broadcast(protocol::Json{{"type", "file_save"}, {"path", fs::relative(resolved, projectRoot_).generic_string()}, {"content", message.value("content", "")}});
             broadcast(makeFileListMessage());
+            if (fs::equivalent(resolved, mainTexPath_)) {
+                std::lock_guard<std::mutex> lock(mutex_);
+                mainDocument_ = message.value("content", "");
+            }
+        } else {
+            sendTo(session, protocol::Json{{"type", "error"}, {"message", std::string("Failed to save file: ") + writeError}});
         }
         return;
     }
@@ -631,14 +658,31 @@ void CollabServer::handleMessage(std::shared_ptr<ClientSession> session, const p
     }
 
     if (type == "file_upload") {
-        if (!resolveInsideRoot(pathText, resolved, error)) {
+        const std::string name = message.value("name", "");
+        const std::string optionalSubfolder = message.value("path", "");
+        if (name.empty()) {
+            sendTo(session, protocol::Json{{"type", "error"}, {"message", "Missing upload file name."}});
+            return;
+        }
+
+        fs::path relativePath = fs::path(optionalSubfolder) / fs::path(name).filename();
+        if (!resolveInsideRoot(relativePath, resolved, error)) {
+            sendTo(session, protocol::Json{{"type", "error"}, {"message", error}});
             return;
         }
         if (!isAllowedExtension(resolved)) {
+            sendTo(session, protocol::Json{{"type", "error"}, {"message", "Unsupported file extension. Allowed: .tex .png .jpg .jpeg .pdf .bib .cls .sty"}});
             return;
         }
         const std::vector<std::uint8_t> data = base64Decode(message.value("data", ""));
-        std::string writeError;
+        constexpr std::size_t kMaxUploadBytes = 15 * 1024 * 1024;
+        if (data.size() > kMaxUploadBytes) {
+            sendTo(session, protocol::Json{{"type", "error"}, {"message", "Upload rejected: file exceeds 15MB limit."}});
+            return;
+        }
+
+        std::error_code ec;
+        fs::create_directories(resolved.parent_path(), ec);
         std::ofstream output(resolved, std::ios::binary | std::ios::trunc);
         if (output) {
             output.write(reinterpret_cast<const char*>(data.data()), static_cast<std::streamsize>(data.size()));
@@ -646,7 +690,10 @@ void CollabServer::handleMessage(std::shared_ptr<ClientSession> session, const p
         if (output) {
             broadcast(protocol::Json{{"type", "file_upload"}, {"path", fs::relative(resolved, projectRoot_).generic_string()}});
             broadcast(makeFileListMessage());
+        } else {
+            sendTo(session, protocol::Json{{"type", "error"}, {"message", "Failed to save uploaded file on server."}});
         }
+        return;
     }
 }
 
