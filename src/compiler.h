@@ -1,7 +1,5 @@
 #pragma once
 
-#include "app_state.h"
-
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -14,6 +12,5 @@ std::string buildCommand(const std::string& executable, const std::vector<std::s
 std::string buildOptionWithPath(const std::string& flag, const std::filesystem::path& path);
 std::string readFile(const std::filesystem::path& path);
 bool writeFile(const std::filesystem::path& path, const std::string& content, std::string& error);
-CompileResult compilePdf(const CompileRequest& request);
 
 }  // namespace compiler
